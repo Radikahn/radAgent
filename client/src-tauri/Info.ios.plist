@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Merged into the iOS app's Info.plist by `tauri ios build`. The composer's file picker (an <input type="file"> in
+  src/chat/Composer.tsx) offers "Take Photo or Video" on iOS, and iOS ends an app that opens the camera or microphone
+  without saying why.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo or video to attach to a message.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record sound with a video you attach to a message.</string>
+</dict>
+</plist>

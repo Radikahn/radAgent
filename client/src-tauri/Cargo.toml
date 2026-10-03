@@ -33,3 +33,7 @@ lto = true
 opt-level = 3
 panic = "abort"
 strip = true
+
+# Proc-macros and build scripts: a stripped proc-macro dylib can't be loaded by rustc on macOS (E0463)
+[profile.release.build-override]
+strip = false

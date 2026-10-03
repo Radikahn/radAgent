@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# `swift` for iOS builds with Xcode 27; scripts/install-ios.sh puts this folder first on PATH.
+#
+# Tauri builds its Swift side with swift-rs, which runs `swift` from PATH. Two things go wrong with Xcode 27:
+# - a swiftly or swift.org toolchain earlier on PATH can't build for the iOS 27 SDK
+#   ("unknown argument: '-target-arch-variant'"), so this always runs Xcode's own Swift
+# - Xcode 27's SwiftPM builds with Swift Build, which leaves @_cdecl functions out of a static library's exports, so
+#   the Rust side fails to link ("Undefined symbols: _retain_object, _register_plugin"). The native build system
+#   still exports them, so `swift build` uses that
+set -euo pipefail
+
+real="$(xcrun --find swift)"
+if [[ "${1:-}" == build ]]; then
+  shift
+  exec "$real" build --build-system native "$@"
+fi
+exec "$real" "$@"
