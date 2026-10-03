@@ -14,6 +14,9 @@ budget_email = "you@example.com"
 
 # GitHub Actions deploys the agent from this repository's main branch (.github/workflows/main.yml)
 # github_repository = "owner/name"
+# With immutable OIDC subjects (newer repositories), also the sub claim's prefix:
+#   gh api repos/<owner>/<name>/actions/oidc/customization/sub --jq .sub_claim_prefix
+# github_oidc_subject_prefix = "repo:owner@<owner id>/name@<repo id>"
 
 # The first scripts/deploy-agent.sh passes image_tag (-var image_tag=...). Once the runtime exists, set it here to
 # any deployed tag so a plain `terraform apply` keeps the runtime; Terraform ignores the image after creating it.
