@@ -7,6 +7,10 @@
 locals {
   create_ci = var.github_repository != ""
 
+  # What GitHub's OIDC sub claim starts with: "repo:<owner>/<name>", or with immutable subjects (the default for
+  # newer repositories) "repo:<owner>@<owner id>/<name>@<repo id>"
+  github_subject_prefix = coalesce(var.github_oidc_subject_prefix, "repo:${var.github_repository}")
+
   # Matches the runtime whether or not it exists yet; AgentCore appends "-<10 random characters>" to the name.
   runtime_arn_pattern = "arn:aws:bedrock-agentcore:${var.region}:${local.account_id}:runtime/${local.runtime_name}-*"
 }
@@ -43,7 +47,7 @@ data "aws_iam_policy_document" "github_actions_trust" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+      values   = ["${local.github_subject_prefix}:ref:refs/heads/main"]
     }
   }
 }

@@ -48,7 +48,10 @@ It signs in to AWS with OIDC as a role that only the repository's main branch ca
 to the ECR repo and update the runtime. Setting it up, once the runtime exists:
 
 ```sh
-# github_repository = "<owner>/<name>" in infra/terraform.tfvars, then
+# github_repository = "<owner>/<name>" in infra/terraform.tfvars, and github_oidc_subject_prefix if this prints
+# an owner and repo id (immutable OIDC subjects):
+gh api repos/<owner>/<name>/actions/oidc/customization/sub --jq .sub_claim_prefix
+# then
 terraform -chdir=infra apply -var image_tag=<deployed tag>   # GitHub OIDC provider + the role
 scripts/ci-vars.sh                                         # Actions variables: region, role, ECR repo, runtime id
 ```

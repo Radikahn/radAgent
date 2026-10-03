@@ -32,6 +32,17 @@ variable "github_repository" {
   }
 }
 
+variable "github_oidc_subject_prefix" {
+  description = "Start of the repository's GitHub OIDC sub claim, if it isn't \"repo:<github_repository>\": with immutable subjects it is \"repo:<owner>@<owner id>/<name>@<repo id>\". Print it with: gh api repos/<owner>/<name>/actions/oidc/customization/sub --jq .sub_claim_prefix"
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.github_oidc_subject_prefix == "" || can(regex("^repo:[^:]+$", var.github_oidc_subject_prefix))
+    error_message = "github_oidc_subject_prefix must look like repo:<owner>@<owner id>/<name>@<repo id>."
+  }
+}
+
 variable "budget_email" {
   description = "Email address that receives budget alerts."
   type        = string
