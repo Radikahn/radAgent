@@ -209,13 +209,15 @@ class Chats:
 
     def prompt(self, chat_id: str, turn_id: Any, text: str, command: Any, attachments: Any, client: Client) -> None:
         send = functools.partial(self.hub.send, chat = chat_id, turn = turn_id)
+        slash = COMMANDS.get(command) if isinstance(command, str) else None
         if chat_id in self.deleting:
             send("error", message = "This chat was deleted")
             send("turn_end", stop_reason = "rejected")
         elif self.busy(chat_id):
             send("error", message = "Still answering the last message")
             send("turn_end", stop_reason = "rejected")
-        elif not text and not attachments:
+        elif not text and not attachments and slash is None:
+            # A command may be sent on its own (/profile shows the profile); one that needs text says so
             send("turn_end", stop_reason = "rejected")
         else:
             try:
@@ -227,7 +229,7 @@ class Chats:
             client.viewing = chat_id
             # A chat appears in the list with its first message, titled after it (or its files when it has no text)
             try:
-                self.store.touch(chat_id, first_message = text or ", ".join(file.name for file in files))
+                self.store.touch(chat_id, first_message = text or ", ".join(file.name for file in files) or f"/{command}")
             except StorageUnavailable as e:
                 # The agent couldn't load or save the chat either
                 send("error", message = str(e))
@@ -237,7 +239,7 @@ class Chats:
             send("turn_start", text = text, command = command if isinstance(command, str) else None,
                  attachments = [file.name for file in files])
             self.send_list()
-            if slash := COMMANDS.get(command) if isinstance(command, str) else None:
+            if slash is not None:
                 task = self._run_command(chat_id, turn_id, slash, text, send)
             else:
                 task = self._answer(chat_id, text, command if isinstance(command, str) else None, files, send)
@@ -307,7 +309,9 @@ class Chats:
         turn = turn_id if isinstance(turn_id, str) and _UUID.fullmatch(turn_id) else None
         stop_reason = "end_turn"
         try:
-            await command.run(CommandRun(agent, text, emit, turn))
+            reply = await command.run(CommandRun(agent, text, emit, turn))
+            if command.reply_as_text:
+                send("text", delta = reply)
         except asyncio.CancelledError:
             # Stopped from a client; the task ends normally so whoever is waiting on it carries on
             stop_reason = "cancelled"
@@ -414,15 +418,15 @@ def dispatch(chats: Chats, client: Client, command: Any) -> None:
     Commands, each naming the chat it's for (ids come from the client):
         {"type": "list"}                                    the chats, as a `chats` event
         {"type": "open", "chat": id}                        the chat's saved turns, as a `history` event
-        {"type": "prompt", "chat": id, "turn": id, "text": str, "command": "memory" | "code" | "research" | None,
-         "attachments"?: [{"name": str, "data": base64}]}
+        {"type": "prompt", "chat": id, "turn": id, "text": str, "command": "memory" | "code" | "research" |
+         "profile" | None, "attachments"?: [{"name": str, "data": base64}]}
         {"type": "cancel", "chat": id}
         {"type": "delete", "chat": id}
     A chat that has never had a message has nothing saved; its first prompt creates it. "command": "memory" is
     /memory, which lets that one message look through the other chats, and "code" is /code, which asks for code
-    in copyable code blocks (radagent.coding); any command in radagent.commands, such as "research", runs that
-    command on the text instead of the agent answering it. Attachments are images, PDFs, Office and text files;
-    a prompt may carry them without text
+    in copyable code blocks (radagent.coding); any command in radagent.commands, such as "research" or "profile",
+    runs that command on the text instead of the agent answering it, and may be sent without text. Attachments are
+    images, PDFs, Office and text files; a prompt may carry them without text
 
     Events out: ready, chats, history (to the client that opened the chat), error, and per turn turn_start, text,
     thinking, tool_start, tool_input, tool_end, card, command_event ({"command": name, "event": ...}, the command's

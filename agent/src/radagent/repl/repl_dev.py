@@ -76,7 +76,9 @@ def run_repl(model: str | None = None, system_prompt: str | None = None) -> None
         if invocation := parse_command(query):
             command, arguments = invocation
             try:
-                asyncio.run(command.run(CommandRun(agent, arguments, ResearchPrinter())))
+                reply = asyncio.run(command.run(CommandRun(agent, arguments, ResearchPrinter())))
+                if command.reply_as_text:
+                    print(f"\n{reply}")
             except KeyboardInterrupt:
                 print("\n[interrupted]")
             except Exception as e:

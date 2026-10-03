@@ -28,7 +28,7 @@ terraform -chdir=infra apply
 # 3. One-time setup
 scripts/create-user.sh you@example.com   # Cognito user, prompts for the password
 scripts/put-secrets.sh                   # EXA_API_KEY, SPOTIFY_* + SECRET_PROMPT -> Secrets Manager
-scripts/migrate-chats.sh                 # agent/.agent/{chats,memory} -> S3 (asks first)
+scripts/migrate-chats.sh                 # agent/.agent/{chats,memory,profile} -> S3 (asks first)
 
 # 4. Build + push the image, then apply with image_tag (creates the runtime)
 scripts/deploy-agent.sh
