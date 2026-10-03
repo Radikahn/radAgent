@@ -4,13 +4,17 @@ Rebuilds a saved chat as the turns the client renders, so a reopened chat looks 
 Keep the shapes in step with `Turn` and `Part` in `client/src/agent.ts`. The saved conversation has no timings,
 so thinking and tool parts carry 0 for both ends and the client shows them without durations
 """
+from collections.abc import Callable
 from typing import Any
 
+from radagent.coding import is_code_note
 from radagent.media import split_attachments
 from radagent.tools.chats import is_cross_chat_note
 
 # Tool inputs are cut to this length; the client only shows a one-line hint of each call
 DETAIL_CHARS: int = 120
+# The notes sent ahead of a message started with these commands; the turn shows the command in their place
+NOTES: dict[str, Callable[[str], bool]] = {"memory": is_cross_chat_note, "code": is_code_note}
 
 
 
@@ -21,6 +25,11 @@ def describe(tool_input: Any) -> str:
         tool_input = strings[0] if strings else ""
     text = " ".join(str(tool_input).split())
     return text[:DETAIL_CHARS] + "…" if len(text) > DETAIL_CHARS else text
+
+
+def _note_of(text: str) -> str | None:
+    """The command `text` is the note of, if it's one"""
+    return next((name for name, is_note in NOTES.items() if is_note(text)), None)
 
 
 def _add_text(parts: list[dict[str, Any]], kind: str, text: str) -> None:
@@ -64,12 +73,12 @@ def to_turns(messages: list[dict[str, Any]], cards: dict[str, Any]) -> list[dict
             texts = [text for block in rest if isinstance(text := block.get("text"), str)]
             turn: dict[str, Any] = {
                 "id": message.get("tracking_id") or f"saved-{index}",
-                "prompt": "\n".join(text for text in texts if not is_cross_chat_note(text)).strip(),
+                "prompt": "\n".join(text for text in texts if not _note_of(text)).strip(),
                 "parts": [],
                 "status": "done",
             }
-            if any(is_cross_chat_note(text) for text in texts):
-                turn["command"] = "memory"
+            if notes := [name for text in texts if (name := _note_of(text))]:
+                turn["command"] = notes[0]
             if attachments:
                 turn["attachments"] = attachments
             # A slash command like /research saved its events under its turn; they show the turn as it ended,

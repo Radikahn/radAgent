@@ -1,8 +1,10 @@
 import { memo, useEffect, useMemo, useState } from "react";
-import Markdown, { type Components } from "react-markdown";
+import Markdown, { type Components, type Options } from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import type { ElementContent, Root } from "hast";
+import { CodeBlock, WritingCode } from "./CodeBlock";
 import { externalUrl, remarkLinkify } from "./linkify";
 
 /** How much of `text` may show: while streaming only whole words, so a word never appears in pieces */
@@ -37,10 +39,12 @@ function useReveal(text: string, live: boolean): number {
   return Math.min(shown, limit);
 }
 
+/** Whether `text` ends inside a code fence that hasn't been closed yet */
+const insideFence = (text: string) => (text.match(/^ {0,3}(```|~~~)/gm)?.length ?? 0) % 2 === 1;
+
 /** Closes a code fence, inline code or bold run that's still streaming, so it renders styled, not as raw markers */
 function closeOpenMarkdown(text: string): string {
-  const fences = text.match(/^ {0,3}(```|~~~)/gm)?.length ?? 0;
-  if (fences % 2 === 1) return text.endsWith("\n") ? `${text}\`\`\`` : `${text}\n\`\`\``;
+  if (insideFence(text)) return text.endsWith("\n") ? `${text}\`\`\`` : `${text}\n\`\`\``;
 
   // Closers have to touch the last word; "**bold **" doesn't close
   const body = text.trimEnd();
@@ -82,9 +86,12 @@ function rehypeWords() {
 }
 
 const remarkPlugins = [remarkGfm, remarkLinkify];
-const rehypePlugins = [rehypeWords];
+// Code is highlighted first, so the word spans split its tokens like any other text. Blocks without a language
+// stay plain, as do languages outside highlight.js's common set
+const rehypePlugins: Options["rehypePlugins"] = [rehypeHighlight, rehypeWords];
 
 const components: Components = {
+  pre: CodeBlock,
   // A plain link would navigate the app's webview away; open it in the browser instead
   a: ({ href, children }) => {
     const url = href && externalUrl(href);
@@ -112,11 +119,16 @@ type Props = {
 export const MagicText = memo(function MagicText({ text, live, overrides }: Props) {
   const shown = useReveal(text, live);
   const merged = useMemo(() => (overrides ? { ...components, ...overrides } : components), [overrides]);
+  const markdown = closeOpenMarkdown(text.slice(0, shown));
+  // The fence closed above belongs to the code block still being written, which ends where the Markdown does
+  const writingEnd = live && insideFence(text.slice(0, shown)) ? markdown.length : null;
   return (
     <div className="markdown">
-      <Markdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={merged}>
-        {closeOpenMarkdown(text.slice(0, shown))}
-      </Markdown>
+      <WritingCode.Provider value={writingEnd}>
+        <Markdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={merged}>
+          {markdown}
+        </Markdown>
+      </WritingCode.Provider>
     </div>
   );
 });
