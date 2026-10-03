@@ -14,6 +14,11 @@ export const COMMANDS: Command[] = [
     fallback: "What do you remember about me from our other chats?",
   },
   {
+    // The agent answers as usual, asked for code (agent/src/radagent/coding.py); chat/CodeBlock.tsx draws the blocks
+    name: "code",
+    hint: "Write code, in boxes you can copy",
+  },
+  {
     // Runs agent/src/radagent/tools/research; its progress renders through chat/CommandPart.tsx
     name: "research",
     hint: "Send a crew of agents across the web and get back a cited report",

@@ -26,14 +26,14 @@
       "csp": {
         "default-src": "'self'",
         "connect-src": "'self' ipc: http://ipc.localhost https://*.amazonaws.com wss://*.amazonaws.com ws://127.0.0.1:8787",
-        "img-src": "'self' data: blob: https://tile.openstreetmap.org https://www.google.com https://*.gstatic.com https://i.ytimg.com",
+        "img-src": "'self' data: blob: https://tile.openstreetmap.org https://www.google.com https://*.gstatic.com https://i.ytimg.com https://*.scdn.co https://*.spotifycdn.com",
         "style-src": "'self' 'unsafe-inline'",
         "font-src": "'self' data:"
       },
       "devCsp": {
         "default-src": "'self'",
         "connect-src": "'self' ipc: http://ipc.localhost https://*.amazonaws.com wss://*.amazonaws.com ws://127.0.0.1:8787 ws: http://localhost:1420",
-        "img-src": "'self' data: blob: https://tile.openstreetmap.org https://www.google.com https://*.gstatic.com https://i.ytimg.com",
+        "img-src": "'self' data: blob: https://tile.openstreetmap.org https://www.google.com https://*.gstatic.com https://i.ytimg.com https://*.scdn.co https://*.spotifycdn.com",
         "style-src": "'self' 'unsafe-inline'",
         "font-src": "'self' data:"
       }

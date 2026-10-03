@@ -127,10 +127,11 @@ def _decode_attachments(items: Any) -> list[Attachment]:
     return attachments
 
 
-async def _run_turn(agent: RadAgent, prompt: str, cross_chat: bool, attachments: list[Attachment], send: Send) -> None:
+async def _run_turn(agent: RadAgent, prompt: str, command: str | None, attachments: list[Attachment], send: Send) -> None:
     stop_reason = "error"
     try:
-        async for event in agent.stream(prompt, cross_chat = cross_chat, attachments = attachments):
+        stream = agent.stream(prompt, cross_chat = command == "memory", attachments = attachments, code = command == "code")
+        async for event in stream:
             _forward(event, send)
             if "result" in event:
                 stop_reason = event["result"].stop_reason
@@ -239,7 +240,7 @@ class Chats:
             if slash := COMMANDS.get(command) if isinstance(command, str) else None:
                 task = self._run_command(chat_id, turn_id, slash, text, send)
             else:
-                task = self._answer(chat_id, text, command == "memory", files, send)
+                task = self._answer(chat_id, text, command if isinstance(command, str) else None, files, send)
             self.turns[chat_id] = asyncio.create_task(task)
 
 
@@ -269,7 +270,7 @@ class Chats:
         self.unload_idle(finished = chat_id)
 
 
-    async def _answer(self, chat_id: str, text: str, cross_chat: bool, attachments: list[Attachment], send: Send) -> None:
+    async def _answer(self, chat_id: str, text: str, command: str | None, attachments: list[Attachment], send: Send) -> None:
         if (agent := await self._load(chat_id, send)) is None:
             return
 
@@ -279,7 +280,7 @@ class Chats:
                 self.store.add_card(chat_id, fields["id"], fields["card"])
             send(kind, **fields)
 
-        await _run_turn(agent, text, cross_chat, attachments, send_and_keep)
+        await _run_turn(agent, text, command, attachments, send_and_keep)
         self._finish(chat_id)
 
 
@@ -413,14 +414,15 @@ def dispatch(chats: Chats, client: Client, command: Any) -> None:
     Commands, each naming the chat it's for (ids come from the client):
         {"type": "list"}                                    the chats, as a `chats` event
         {"type": "open", "chat": id}                        the chat's saved turns, as a `history` event
-        {"type": "prompt", "chat": id, "turn": id, "text": str, "command": "memory" | "research" | None,
+        {"type": "prompt", "chat": id, "turn": id, "text": str, "command": "memory" | "code" | "research" | None,
          "attachments"?: [{"name": str, "data": base64}]}
         {"type": "cancel", "chat": id}
         {"type": "delete", "chat": id}
     A chat that has never had a message has nothing saved; its first prompt creates it. "command": "memory" is
-    /memory, which lets that one message look through the other chats; any command in radagent.commands, such
-    as "research", runs that command on the text instead of the agent answering it. Attachments are images,
-    PDFs, Office and text files; a prompt may carry them without text
+    /memory, which lets that one message look through the other chats, and "code" is /code, which asks for code
+    in copyable code blocks (radagent.coding); any command in radagent.commands, such as "research", runs that
+    command on the text instead of the agent answering it. Attachments are images, PDFs, Office and text files;
+    a prompt may carry them without text
 
     Events out: ready, chats, history (to the client that opened the chat), error, and per turn turn_start, text,
     thinking, tool_start, tool_input, tool_end, card, command_event ({"command": name, "event": ...}, the command's

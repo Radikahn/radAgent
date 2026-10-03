@@ -22,6 +22,14 @@ const TOOL_LABELS: Record<string, [string, string]> = {
   read_chat: ["Reading another chat", "Read another chat"],
   share_links: ["Sharing links", "Shared links"],
   search_youtube: ["Searching YouTube", "Searched YouTube"],
+  spotify_search: ["Searching Spotify", "Searched Spotify"],
+  spotify_library: ["Opening your Spotify library", "Opened your Spotify library"],
+  spotify_lookup: ["Looking it up on Spotify", "Looked it up on Spotify"],
+  spotify_now_playing: ["Checking what's playing", "Checked what's playing"],
+  spotify_player: ["Controlling Spotify", "Controlled Spotify"],
+  spotify_playlist: ["Editing a playlist", "Edited a playlist"],
+  spotify_save: ["Updating your Spotify library", "Updated your Spotify library"],
+  spotify_api: ["Calling Spotify", "Called Spotify"],
 };
 
 type Tool = Extract<Part, { kind: "tool" }>;

@@ -12,6 +12,7 @@ HELP_TEXT = """Commands:
   /reset  Start a fresh agent (clears conversation)
   /attach PATH...  Send files (images, PDFs, Office and text files) with your next message
   /exit   Quit the REPL (also /quit or Ctrl-D)
+  /code REQUEST  Have the agent write code, in fenced blocks named after their files
 """ + "\n".join(f"  /{command.name} {command.usage}  {command.description}" for command in COMMANDS.values())
 
 
@@ -82,10 +83,18 @@ def run_repl(model: str | None = None, system_prompt: str | None = None) -> None
                 print(f"\n[error] {type(e).__name__}: {e}")
             continue
 
+        # /code asks the agent itself, with a note on how to lay the code out
+        code = query == "/code" or query.startswith("/code ")
+        if code:
+            query = query.removeprefix("/code").strip()
+            if not query and not attachments:
+                print("Usage: /code REQUEST")
+                continue
+
         display.start_turn()
         try:
             # The display handler streams the labelled response to stdout
-            agent.query(query, attachments = attachments)
+            agent.query(query, attachments = attachments, code = code)
         except KeyboardInterrupt:
             print("\n[interrupted]")
         except MediaError as e:

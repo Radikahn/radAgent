@@ -26,10 +26,14 @@ def main() -> None:
     parser.add_argument("--host", default = None, help = "Where --serve listens; default 127.0.0.1, or 0.0.0.0 in a container")
     parser.add_argument("--port", type = int, default = None, help = f"Where --serve listens; default {SERVE_PORT}, or {DEV_PORT} with --dev")
     parser.add_argument("--model", default = None, help = "Override the model ID defined in config.py")
+    parser.add_argument("--spotify-login", action = "store_true", help = "Connect your Spotify account; saves the login to agent/.env")
     args = parser.parse_args()
     port = args.port or (DEV_PORT if args.dev else SERVE_PORT)
 
     load_dotenv()
+    if args.spotify_login:
+        from radagent.tools.spotify.login import login
+        raise SystemExit(login())
     if args.repl:
         from radagent.repl import run_repl
         run_repl(model = args.model, system_prompt = _system_prompt())

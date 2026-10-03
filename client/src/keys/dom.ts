@@ -35,6 +35,7 @@ const BLOCKS = [
   ".place",
   ".link-row",
   ".video",
+  ".spotify-row",
   ".research-header",
   ".crew-toggle",
   ".window",

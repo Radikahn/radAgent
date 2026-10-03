@@ -1,0 +1,200 @@
+/* Code blocks in replies (CodeBlock.tsx): a header with the file's name and a copy button over the code, and the
+   colors for rehype-highlight's hljs-* tokens, as light-dark(light, dark) pairs like the tokens in App.css */
+
+.code-block {
+  /* The same as other blocks in a reply; .markdown's first and last child rules still win */
+  margin: 0 0 0.9em;
+  border-radius: 12px;
+  background: var(--code-bg);
+
+  --code-keyword: light-dark(#cf222e, #ff7b72);
+  --code-function: light-dark(#8250df, #d2a8ff);
+  --code-constant: light-dark(#0550ae, #79c0ff);
+  --code-string: light-dark(#0a3069, #a5d6ff);
+  --code-builtin: light-dark(#953800, #ffa657);
+  --code-comment: light-dark(#6e7781, #8b949e);
+  --code-tag: light-dark(#116329, #7ee787);
+  --code-added: light-dark(#dafbe1, rgba(46, 160, 67, 0.16));
+  --code-removed: light-dark(#ffebe9, rgba(248, 81, 73, 0.16));
+}
+
+/* Stays in view under the thread's faded top edge while a long block scrolls past, so copying never means scrolling
+   back up; the page's color under the block's tint makes it opaque without looking any different */
+.code-head {
+  position: sticky;
+  top: calc(56px + env(safe-area-inset-top));
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 4px 6px 4px 16px;
+  border-bottom: 1px solid var(--faint);
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(var(--code-bg), var(--code-bg)), var(--bg);
+  font: 12px/1.4 var(--mono);
+  color: var(--muted);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.code-name,
+.code-language {
+  white-space: nowrap;
+}
+
+/* A long path gives way first, so the copy button always fits */
+.code-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.code-file {
+  color: var(--text);
+}
+
+.code-name::before,
+.code-language::before,
+.code-copy::after {
+  content: attr(data-label);
+}
+
+.code-copy,
+.code-writing {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font: 12px/1.4 var(--font);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.code-copy:hover {
+  color: var(--text);
+  background: var(--faint);
+}
+
+.code-copy.yes {
+  color: var(--text);
+}
+
+.code-copy.failed {
+  color: var(--danger);
+}
+
+.code-copy svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.code-writing {
+  padding: 5px 9px;
+  font: 12px/1.4 var(--font);
+}
+
+.markdown .code-block pre {
+  margin: 0;
+  padding: 12px 16px 14px;
+  border-radius: 0 0 12px 12px;
+  background: none;
+  scrollbar-width: thin;
+}
+
+/* ---- Syntax colors ---- */
+
+.hljs-keyword,
+.hljs-doctag,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  color: var(--code-keyword);
+}
+
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.function_ {
+  color: var(--code-function);
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-variable,
+.hljs-section {
+  color: var(--code-constant);
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-meta .hljs-string {
+  color: var(--code-string);
+}
+
+.hljs-built_in,
+.hljs-symbol,
+.hljs-bullet {
+  color: var(--code-builtin);
+}
+
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  color: var(--code-comment);
+}
+
+.hljs-name,
+.hljs-quote,
+.hljs-selector-pseudo,
+.hljs-selector-tag {
+  color: var(--code-tag);
+}
+
+.hljs-section,
+.hljs-strong {
+  font-weight: 600;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+/* Diffs: whole lines tinted, so the + and - read at a glance */
+.hljs-addition,
+.hljs-deletion {
+  display: inline-block;
+  min-width: 100%;
+}
+
+.hljs-addition {
+  color: var(--code-tag);
+  background: var(--code-added);
+}
+
+.hljs-deletion {
+  color: var(--code-keyword);
+  background: var(--code-removed);
+}
