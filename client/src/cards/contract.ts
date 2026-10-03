@@ -42,7 +42,32 @@ export type LinksCard = {
   links: SharedLink[];
 };
 
-export type Card = PlacesCard | LinksCard;
+export type Video = {
+  /** YouTube video id */
+  id: string;
+  /** https://www.youtube.com/watch?v=<id> */
+  url: string;
+  title: string;
+  channel: string | null;
+  /** As YouTube shows it, e.g. "11:53"; null while live */
+  duration: string | null;
+  /** As YouTube shows it, e.g. "3.3M views" */
+  views: string | null;
+  /** As YouTube shows it, e.g. "2 years ago" */
+  published: string | null;
+  live: boolean;
+  /** 320x180 JPEG on i.ytimg.com */
+  thumbnail: string;
+};
+
+export type VideosCard = {
+  card: "videos";
+  version: 1;
+  query: string;
+  videos: Video[];
+};
+
+export type Card = PlacesCard | LinksCard | VideosCard;
 
 /** Cards arrive untyped over the bridge; anything with an unknown kind or version is ignored rather than guessed at */
 export function isPlacesCard(card: unknown): card is PlacesCard {
@@ -55,4 +80,10 @@ export function isLinksCard(card: unknown): card is LinksCard {
   if (typeof card !== "object" || card === null) return false;
   const value = card as Record<string, unknown>;
   return value.card === "links" && value.version === 1 && Array.isArray(value.links);
+}
+
+export function isVideosCard(card: unknown): card is VideosCard {
+  if (typeof card !== "object" || card === null) return false;
+  const value = card as Record<string, unknown>;
+  return value.card === "videos" && value.version === 1 && Array.isArray(value.videos);
 }

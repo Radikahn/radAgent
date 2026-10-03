@@ -21,6 +21,7 @@ const TOOL_LABELS: Record<string, [string, string]> = {
   search_chats: ["Looking through other chats", "Looked through other chats"],
   read_chat: ["Reading another chat", "Read another chat"],
   share_links: ["Sharing links", "Shared links"],
+  search_youtube: ["Searching YouTube", "Searched YouTube"],
 };
 
 type Tool = Extract<Part, { kind: "tool" }>;

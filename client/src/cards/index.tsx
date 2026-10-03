@@ -1,6 +1,7 @@
-import { isLinksCard, isPlacesCard } from "./contract";
+import { isLinksCard, isPlacesCard, isVideosCard } from "./contract";
 import { LinksCardView } from "./LinksCard";
 import { PlacesCardView } from "./PlacesCard";
+import { VideosCardView } from "./VideosCard";
 import "./cards.css";
 
 export type { Card } from "./contract";
@@ -9,5 +10,6 @@ export type { Card } from "./contract";
 export function CardView({ card }: { card: unknown }) {
   if (isPlacesCard(card)) return <PlacesCardView card={card} />;
   if (isLinksCard(card)) return <LinksCardView card={card} />;
+  if (isVideosCard(card)) return <VideosCardView card={card} />;
   return null;
 }

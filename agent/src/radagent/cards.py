@@ -62,6 +62,25 @@ class LinksCard(TypedDict):
     links: list[SharedLink]
 
 
+class Video(TypedDict):
+    id: str                     # YouTube video id
+    url: str                    # https://www.youtube.com/watch?v=<id>
+    title: str
+    channel: str | None
+    duration: str | None        # As YouTube shows it, e.g. "11:53"; None while live
+    views: str | None           # As YouTube shows it, e.g. "3.3M views"
+    published: str | None       # As YouTube shows it, e.g. "2 years ago"
+    live: bool
+    thumbnail: str              # 320x180 JPEG on i.ytimg.com
+
+
+class VideosCard(TypedDict):
+    card: Literal["videos"]
+    version: Literal[1]
+    query: str
+    videos: list[Video]
+
+
 
 def is_card(data: Any) -> bool:
     """True when something a tool yielded is a card for the client rather than progress or its result"""

@@ -20,7 +20,10 @@ _PROTECTED_NAMES: frozenset[str] = frozenset({".env", ".aws", ".ssh", ".netrc", 
 _PAGE_SOURCE = re.compile(r"\ASource: (\S+)")
 _SEARCH_RESULT_URL = re.compile(r"(?m)^\d+\. .* — (https?://\S+)$")
 # Tools whose results come from one fixed, publicly editable source
-_FIXED_SOURCE_TOOLS: dict[str, str] = {"find_places": "https://www.openstreetmap.org"}
+_FIXED_SOURCE_TOOLS: dict[str, str] = {
+    "find_places": "https://www.openstreetmap.org",
+    "search_youtube": "https://www.youtube.com",
+}
 # Agent state key holding the taint; the session saves agent state, so a resumed chat stays gated
 TAINT_STATE_KEY: str = "untrusted_sources"
 
