@@ -42,3 +42,13 @@ output "runtime_arn" {
   description = "AgentCore runtime ARN; null until an image_tag has been applied."
   value       = one(aws_bedrockagentcore_agent_runtime.agent[*].agent_runtime_arn)
 }
+
+output "github_repository" {
+  description = "GitHub repository that deploys the agent; empty when there is no CI role."
+  value       = var.github_repository
+}
+
+output "github_actions_role_arn" {
+  description = "Role GitHub Actions assumes to deploy the agent; null when github_repository is empty."
+  value       = one(aws_iam_role.github_actions[*].arn)
+}

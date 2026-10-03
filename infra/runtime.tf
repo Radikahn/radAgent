@@ -1,5 +1,7 @@
-# The AgentCore runtime. It only exists once an image has been pushed: scripts/deploy-agent.sh
-# pushes <ecr_url>:<tag> and then applies with -var image_tag=<tag>.
+# The AgentCore runtime. It only exists once an image has been pushed: the first scripts/deploy-agent.sh
+# pushes <ecr_url>:<tag> and then applies with -var image_tag=<tag>. After that, deploys (GitHub Actions on
+# every push to main, or scripts/deploy-agent.sh) change the image with scripts/update-runtime.sh, so
+# Terraform ignores it; everything else here is still Terraform's.
 #
 # prevent_destroy guards against a later `terraform apply` that forgets -var image_tag: that would
 # otherwise plan to destroy the runtime (count -> 0) and the next deploy would get a new ARN, breaking
@@ -52,6 +54,7 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = [agent_runtime_artifact]
   }
 }
 

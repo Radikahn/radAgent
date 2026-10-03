@@ -12,4 +12,9 @@ budget_email = "you@example.com"
 #   "global.anthropic.claude-haiku-4-5-20251001-v1:0",
 # ]
 
-# image_tag is passed by scripts/deploy-agent.sh (-var image_tag=...); leave it unset here.
+# GitHub Actions deploys the agent from this repository's main branch (.github/workflows/main.yml)
+# github_repository = "owner/name"
+
+# The first scripts/deploy-agent.sh passes image_tag (-var image_tag=...). Once the runtime exists, set it here to
+# any deployed tag so a plain `terraform apply` keeps the runtime; Terraform ignores the image after creating it.
+# image_tag = "<git sha>-<timestamp>"
