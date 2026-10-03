@@ -70,8 +70,8 @@ and `i` goes back to the message box. The corner under the input shows the mode.
 - `j` / `k` step through the chat a block at a time (a paragraph, list item, code block, card or message),
   `{` / `}` by message, `gg` / `G` to either end, `Ctrl-d` / `Ctrl-u` by half a screen. Counts work: `3j`.
 - `Enter` opens what's in the block; `f` labels everything clickable on screen, and typing a label clicks it.
-- `yy` copies the block, `Y` the whole reply as Markdown, `y` any text selected with the mouse; `p` puts it in
-  the message box.
+- `yy` copies the block (just the code, for a code block), `Y` the whole reply as Markdown, `y` any text
+  selected with the mouse; `p` puts it in the message box.
 - `Ctrl-h` goes to the chat list (`j` / `k`, `Enter` to open, `dd` to delete), `Ctrl-l` back, `Ctrl-j` to the
   input; `gt` / `gT` switch chats from anywhere, and `Ctrl-^` goes back to the last one.
 - `/` searches the chat or the list (`n` / `N` for the next match); `:` runs commands such as `:b <title>`,
@@ -81,6 +81,15 @@ The keymap is data in `client/src/keys/keymap.ts`, which also feeds the help she
 can follow a half-typed key. The layer finds blocks and buttons by class name (`client/src/keys/dom.ts`), so new
 UI is reachable with `f` without any wiring. In normal mode `Ctrl-b` scrolls up, as in vim; use ⌘B or `Space b`
 for the chat list.
+
+### Code
+
+Start a message with `/code` to have the agent write code, e.g. `/code a script that renames photos by the day
+they were taken`. It answers with whole files rather than sketches, each in its own block named after its file,
+and a line or two on how to run them; it may run the code once in a temporary folder first to catch mistakes
+(`agent/src/radagent/coding.py` holds what it's asked). Every code block in a reply, `/code` or not, is a box with
+syntax highlighting and a Copy button that stays in view while a long file scrolls past; the box says "Writing"
+until its code has finished streaming (`client/src/chat/CodeBlock.tsx`).
 
 ### Settings
 

@@ -6,18 +6,23 @@ from typing import Any, cast
 from os import getenv
 
 from radagent.chats import ChatStore
+from radagent.coding import CODE_NOTE, is_code_note
 from radagent.config import MODEL, TRUSTED_DOMAINS
 from radagent.media import Attachment, MediaGuard, prompt_content
 
 from radagent.prompts.lib.prompt import initalize_agent
 from radagent.tools import TOOLS
-from radagent.tools.chats import CROSS_CHAT, CROSS_CHAT_NOTE, chat_tools
+from radagent.tools.chats import CROSS_CHAT, CROSS_CHAT_NOTE, chat_tools, is_cross_chat_note
 from radagent.tools.web import TrustGate
 from strands.agent import AgentResult
+from strands.types.content import ContentBlock, Message
 from strands_harness import create_harness
+from strands_harness.defaults import DEFAULT_MEMORY_DIR
 from strands_harness.memory import MEMORY_STORE_NAME, resolve_memory
 from strands_harness.models import resolve_web_fetch_model
-from strands.memory import ExtractionConfig, MemoryManager, MemoryStore, ModelExtractor
+from strands.memory import (
+    ExtractionConfig, ExtractionResult, Extractor, ExtractorContext, MemoryManager, MemoryStore, ModelExtractor,
+)
 from strands.session import SnapshotSessionManager
 from strands.storage import LocalFileStorage, S3Storage
 from strands.vended_memory_stores.file_memory_store import FileMemoryStore
@@ -50,22 +55,57 @@ def _user_turn_memory(model: str, storage: LocalFileStorage | S3Storage | None =
         storage: {LocalFileStorage | S3Storage | None} Where the facts go, one markdown file each; None for the
                  harness's `.agent/memory`
     """
-    stores: list[MemoryStore] | None = None
-    if storage is not None:
-        # The store the harness builds for a memory folder, over storage that may be a bucket instead.
-        # namespace("") keeps the files directly in `storage` rather than under the store's own memory/<name>/
-        # The cast: FileMemoryStore sets the protocol's attributes in __init__, which type checkers don't count
-        stores = [cast(MemoryStore, FileMemoryStore(
-            name = MEMORY_STORE_NAME,
-            storage = storage.namespace(""),
-            writable = True,
-            extraction = ExtractionConfig(extractor = ModelExtractor(model = resolve_web_fetch_model(model, None))),
-        ))]
-    memory = resolve_memory(stores = stores, model = model)
+    # The store the harness builds for a memory folder, over storage that may be a bucket instead, and extracting
+    # without slash commands' notes. namespace("") keeps the files directly in `storage` rather than under the
+    # store's own memory/<name>/
+    # The cast: FileMemoryStore sets the protocol's attributes in __init__, which type checkers don't count
+    extractor = _WithoutNotes(ModelExtractor(model = resolve_web_fetch_model(model, None)))
+    store = cast(MemoryStore, FileMemoryStore(
+        name = MEMORY_STORE_NAME,
+        storage = (storage or LocalFileStorage(DEFAULT_MEMORY_DIR)).namespace(""),
+        writable = True,
+        extraction = ExtractionConfig(extractor = extractor),
+    ))
+    memory = resolve_memory(stores = [store], model = model)
     if not isinstance(getattr(memory, "_injection_config", None), dict):
         raise RuntimeError("strands MemoryManager no longer has _injection_config; revisit _user_turn_memory")
     memory._injection_config = {**memory._injection_config, "trigger": "userTurn"}
     return memory
+
+
+class _WithoutNotes:
+    """
+    Distills facts the way `extractor` does, leaving out the notes slash commands put ahead of a message (/memory's,
+    /code's). They're the app talking to the model; taken for the user's own words they'd be remembered as
+    preferences like "wants complete, runnable code"
+    """
+
+    def __init__(self, extractor: Extractor) -> None:
+        self.extractor = extractor
+
+
+    async def extract(self, messages: list[Message], context: ExtractorContext | None = None) -> list[ExtractionResult]:
+        kept: list[Message] = []
+        for message in messages:
+            content = [block for block in message["content"] if not _is_note(block)]
+            if content:
+                kept.append({**message, "content": content})
+        return await self.extractor.extract(kept, context)
+
+
+def _is_note(block: ContentBlock) -> bool:
+    return isinstance(text := block.get("text"), str) and (is_cross_chat_note(text) or is_code_note(text))
+
+
+def _with_notes(prompt: str | list[ContentBlock], notes: list[str]) -> str | list[ContentBlock]:
+    """
+    The prompt with notes from a slash command ahead of it, e.g. what /code asks for. Each note stays a block of its
+    own, which is how the chat history knows to hide it
+    """
+    if not notes:
+        return prompt
+    blocks: list[ContentBlock] = prompt if isinstance(prompt, list) else [{"text": prompt}]
+    return [*({"text": note} for note in notes), *blocks]
 
 
 
@@ -139,7 +179,7 @@ class RadAgent:
         )
 
 
-    def query(self, query: str, attachments: Sequence[Attachment] = (), **kwargs) -> AgentResult:
+    def query(self, query: str, attachments: Sequence[Attachment] = (), code: bool = False, **kwargs) -> AgentResult:
         """
         Pass provided query to strands agent
 
@@ -150,6 +190,7 @@ class RadAgent:
         Args:
             query: {str}
             attachments: {Sequence[Attachment]} Images, PDFs, Office and text files sent along with the query
+            code: {bool} Ask for code laid out in code blocks (the /code command)
             **kwargs
 
         Returns:
@@ -160,13 +201,14 @@ class RadAgent:
         """
 
         ##TODO: Handle kwargs
-        response: AgentResult = self.AGENT(prompt = prompt_content(query, list(attachments)))
+        prompt = _with_notes(prompt_content(query, list(attachments)), [CODE_NOTE] if code else [])
+        response: AgentResult = self.AGENT(prompt = prompt)
 
         return response
 
 
     async def stream(
-        self, query: str, cross_chat: bool = False, attachments: Sequence[Attachment] = ()
+        self, query: str, cross_chat: bool = False, attachments: Sequence[Attachment] = (), code: bool = False
     ) -> AsyncIterator[dict[str, Any]]:
         """
         Pass provided query to strands agent and stream the response as it is generated
@@ -175,6 +217,7 @@ class RadAgent:
             query: {str}
             cross_chat: {bool} Let this message look through the user's other chats (the /memory command)
             attachments: {Sequence[Attachment]} Images, PDFs, Office and text files sent along with the query
+            code: {bool} Ask for code laid out in code blocks (the /code command)
 
         Returns:
             events: {AsyncIterator[dict]} Strands stream events; the last one holds the `result` {AgentResult}
@@ -185,12 +228,14 @@ class RadAgent:
         # Shrinking a large photo takes a moment, so it runs off the event loop
         prompt = await asyncio.to_thread(prompt_content, query, list(attachments)) if attachments else query
         kwargs: dict[str, Any] = {}
+        notes: list[str] = []
         if cross_chat:
-            # The note tells the model it may look; the flag is what actually unlocks the tools, for this turn only.
-            # It stays a block of its own, which is how the chat history knows to hide it
-            blocks = prompt if isinstance(prompt, list) else [{"text": prompt}]
-            prompt = [{"text": CROSS_CHAT_NOTE}, *blocks]
+            # The note tells the model it may look; the flag is what actually unlocks the tools, for this turn only
+            notes.append(CROSS_CHAT_NOTE)
             kwargs["invocation_state"] = {CROSS_CHAT: True}
+        if code:
+            notes.append(CODE_NOTE)
+        prompt = _with_notes(prompt, notes)
         async for event in self.AGENT.stream_async(prompt, **kwargs):
             yield event
 

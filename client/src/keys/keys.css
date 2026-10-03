@@ -30,8 +30,8 @@
   border-radius: 4px;
 }
 
-/* The message bubble already has a tint, so it gets a focus ring instead */
-.thread .prompt[data-vim-cursor]:focus {
+/* The message bubble and code blocks already have a tint, so they get a focus ring instead */
+.thread :is(.prompt, .code-block)[data-vim-cursor]:focus {
   background-color: color-mix(in srgb, var(--text) 9%, transparent);
   box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px color-mix(in srgb, var(--text) 32%, transparent);
 }
