@@ -80,9 +80,48 @@ jobs:
             terraform -chdir="$dir" validate
           done
 
+  sandbox:
+    name: Sandbox (Docker + SSH)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: agent/uv.lock
+      - run: uv sync --locked
+        working-directory: agent
+      # The sandbox image with docker-compose.yml's limits, and the agent's own tools against it over SSH
+      - name: Start the sandbox
+        run: |
+          sandbox/keygen.sh > /dev/null
+          docker compose -f sandbox/docker-compose.yml up -d --build --wait
+          host_key="$(docker compose -f sandbox/docker-compose.yml exec -T sandbox cat /etc/ssh/host_keys/ssh_host_ed25519_key.pub)"
+          echo "SANDBOX_HOST_KEY=${host_key}" >> "$GITHUB_ENV"
+      - name: Smoke test
+        env:
+          SANDBOX_HOST: 127.0.0.1
+          SANDBOX_SSH_KEY_PATH: .sandbox/id_ed25519
+        run: uv run --locked --project agent python scripts/smoke_sandbox.py
+      - name: Sandbox logs
+        if: failure()
+        run: docker compose -f sandbox/docker-compose.yml logs
+
+  sandbox-nixos:
+    name: Sandbox (NixOS module)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - name: Evaluate the module
+        run: nix-instantiate --eval --strict --json sandbox/eval-test.nix | jq -r .
+
   changes:
     name: Agent changed?
-    needs: [agent, client, infra]
+    needs: [agent, client, infra, sandbox, sandbox-nixos]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:

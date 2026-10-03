@@ -28,3 +28,13 @@ Spotify logins last 6 months; when one runs out the tools say so, and steps 3 an
 caps search at 10 results per type and only lists the songs of playlists you own or collaborate on. Spotify results
 count as untrusted web content (playlist names and descriptions are anyone's to write), so like YouTube searches they
 switch off shell and file editing for the rest of the chat.
+
+## Sandbox
+
+The `sandbox_*` tools run commands, manage background jobs, edit files and move files to and from a container on your
+own server, over SSH with asyncssh (`src/radagent/tools/sandbox`). They read `SANDBOX_HOST`, `SANDBOX_PORT`,
+`SANDBOX_HOST_KEY`, `SANDBOX_SSH_KEY_PATH` (or `SANDBOX_SSH_KEY`) and, through a Cloudflare Tunnel,
+`SANDBOX_CF_ACCESS_CLIENT_ID` and `SANDBOX_CF_ACCESS_CLIENT_SECRET`; `../sandbox/keygen.sh` makes the key and prints
+the rest. Setting up the server is in [../sandbox/README.md](../sandbox/README.md). Like `shell`, the tools turn off for
+the rest of a chat once it reads untrusted web content.
+

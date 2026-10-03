@@ -33,6 +33,23 @@ def read_secret() -> dict[str, Any] | None:
     return settings
 
 
+def reload_from_secret(names: tuple[str, ...]) -> bool:
+    """
+    Copy `names` from the agent's secret as it is now into the environment; True when any of them changed
+
+    AgentCore keeps a session on the environment it started with, so keys pushed with scripts/put-secrets.sh after
+    that would otherwise wait for the session to end. Does nothing locally, where the keys come from agent/.env
+    """
+    settings = read_secret() or {}
+    changed = False
+    for name in names:
+        value = settings.get(name)
+        if isinstance(value, str) and value.strip() and os.environ.get(name) != value:
+            os.environ[name] = value
+            changed = True
+    return changed
+
+
 def load_secrets() -> None:
     """Put the agent's secret into the environment; does nothing without RADAGENT_SECRET_ID"""
     settings = read_secret()

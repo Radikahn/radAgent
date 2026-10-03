@@ -14,5 +14,7 @@ wheels/
 
 # strands agent specifics
 agent/.agent/
+# The agent's SSH key for the sandbox (sandbox/keygen.sh)
+agent/.sandbox/
 agent/src/radagent/prompts/secret_prompts
 .agent/
