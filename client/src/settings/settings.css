@@ -1,0 +1,220 @@
+/* Settings button and modal; colors come from the theme variables in App.css */
+
+/* In the window's corner, so it stays put whether or not the sidebar is open (which leaves room for it); on a phone,
+   clear of the home indicator and, in landscape, the notch */
+.settings-button {
+  position: fixed;
+  left: calc(12px + env(safe-area-inset-left));
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 20;
+}
+
+@media (pointer: coarse) {
+  /* App.css pads touch-sized icon buttons by 8px; pulled back by that so the gear sits where it did */
+  .settings-button {
+    left: calc(4px + env(safe-area-inset-left));
+    bottom: calc(4px + env(safe-area-inset-bottom));
+  }
+
+  .settings-header {
+    margin-right: -14px;
+  }
+}
+
+/* A phone needs its full width for the composer (App.css), so there the gear shows only with the open chat list */
+@media (max-width: 720px) and (pointer: coarse) {
+  .app.sidebar-open .settings-button {
+    transition: opacity 320ms var(--ease);
+  }
+
+  .app:not(.sidebar-open) .settings-button {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 320ms var(--ease), visibility 0s 320ms;
+  }
+}
+
+.settings {
+  width: min(460px, 100% - 32px);
+  max-height: min(640px, 100% - 64px);
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  color: var(--text);
+  overflow: hidden;
+  animation: rise 420ms var(--ease);
+}
+
+/* Only while open: a closed <dialog> must keep the browser's display: none */
+.settings[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Literal colors, since older engines don't give ::backdrop the page's variables */
+.settings::backdrop {
+  background: rgba(0, 0, 0, 0.16);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: fade-in 300ms ease;
+}
+
+/* Thicker than the composer's glass, since text has to be read on it */
+.settings-panel {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 22px 10px;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  scrollbar-width: thin;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-right: -6px;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.settings-section {
+  margin-top: 14px;
+}
+
+.settings-section h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.setting + .setting {
+  border-top: 1px solid var(--faint);
+}
+
+.setting-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 14.5px;
+  line-height: 1.4;
+}
+
+.setting-description {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ---- Controls ---- */
+
+.segmented {
+  flex: none;
+  display: flex;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--faint);
+}
+
+.segmented label {
+  position: relative;
+}
+
+/* The radio stays focusable and keeps arrow-key selection; the label beside it is what shows */
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented span {
+  display: block;
+  padding: 3px 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.segmented label:hover span {
+  color: var(--text);
+}
+
+.segmented input:checked + span {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.segmented input:focus-visible + span,
+.switch:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--text) 40%, transparent);
+  outline-offset: 2px;
+}
+
+.switch {
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 38px;
+  height: 22px;
+  margin: 0;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--text) 16%, transparent);
+  cursor: pointer;
+  transition: background 200ms ease;
+}
+
+.switch::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 200ms var(--ease);
+}
+
+.switch:checked {
+  background: var(--text);
+}
+
+.switch:checked::before {
+  transform: translateX(16px);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings,
+  .settings::backdrop {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (max-width: 720px) and (pointer: coarse) {
+  .app.sidebar-open .settings-button,
+  .app:not(.sidebar-open) .settings-button {
+    transition: none;
+  }
+}

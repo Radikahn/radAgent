@@ -1,0 +1,54 @@
+# Garage: S3-compatible storage for radagent's chats, so every device sees the same ones
+# Run ./setup.sh once, then `docker compose up -d`. See README.md
+
+name: radagent
+
+services:
+  garage:
+    image: dxflrs/garage:v2.3.0
+    restart: unless-stopped
+    # --single-node lays out a one-node cluster; --default-bucket creates the bucket and the key from GARAGE_DEFAULT_*
+    command: ["/garage", "server", "--single-node", "--default-bucket"]
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:?run ./setup.sh first}
+      GARAGE_DEFAULT_ACCESS_KEY: ${GARAGE_DEFAULT_ACCESS_KEY:?run ./setup.sh first}
+      GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_DEFAULT_SECRET_KEY:?run ./setup.sh first}
+      GARAGE_DEFAULT_BUCKET: ${GARAGE_DEFAULT_BUCKET:-radagent}
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - ./data/meta:/var/lib/garage/meta
+      - ./data/data:/var/lib/garage/data
+    ports:
+      # Only the S3 API leaves the container; cluster RPC (3901) stays inside
+      # S3_BIND is 127.0.0.1 by default; set it to the server's Tailscale IP to reach Garage from your devices
+      - "${S3_BIND:-127.0.0.1}:3900:3900"
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Off unless started with `--profile public`: serves the S3 API at https://$S3_DOMAIN with a Let's Encrypt
+  # certificate. Needs ports 80 and 443 free on the server and S3_DOMAIN's DNS pointing at it
+  caddy:
+    image: caddy:2
+    profiles: [public]
+    restart: unless-stopped
+    environment:
+      S3_DOMAIN: ${S3_DOMAIN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      garage:
+        condition: service_healthy
+
+volumes:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,19 @@
+# Single-node Garage holding radagent's chats. Secrets come from the environment (see .env), not this file
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+# SQLite copes with an unclean shutdown better than the default LMDB; a personal server doesn't need LMDB's speed
+db_engine = "sqlite"
+metadata_auto_snapshot_interval = "6h"
+
+# One copy of everything: there's one node. Back up ./data instead
+replication_factor = 1
+
+# Garage's own cluster protocol; only the node itself uses it, so docker-compose.yml never publishes it
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+
+[s3_api]
+# Clients sign requests for this region, so the agent's RADAGENT_S3_REGION must match
+s3_region = "garage"
+api_bind_addr = "[::]:3900"

@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars (gitignored).
+
+budget_email = "you@example.com"
+
+# region                       = "us-west-2"
+# project                      = "radagent"
+# monthly_budget_usd           = 50
+# idle_session_timeout_seconds = 1800
+# max_session_lifetime_seconds = 28800
+# bedrock_model_ids = [
+#   "global.anthropic.claude-sonnet-4-6",
+#   "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+# ]
+
+# image_tag is passed by scripts/deploy-agent.sh (-var image_tag=...); leave it unset here.

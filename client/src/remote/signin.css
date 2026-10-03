@@ -1,0 +1,75 @@
+/* The sign-in screen; colors and the glass surface come from App.css */
+
+.signin {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: calc(24px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+    calc(24px + var(--keyboard-inset) + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  background: var(--bg);
+}
+
+.signin-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(360px, 100%);
+  padding: 28px 24px 24px;
+  border-radius: 22px;
+  animation: rise 420ms var(--ease);
+}
+
+.signin-panel h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.signin-panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.signin-panel input {
+  padding: 10px 12px;
+  border: 1px solid var(--glass-rim);
+  border-radius: 10px;
+  background: var(--faint);
+  color: var(--text);
+  /* 16px or more, or iOS zooms in on focus */
+  font: inherit;
+  font-size: 16px;
+}
+
+.signin-panel input:focus {
+  outline: 2px solid color-mix(in srgb, var(--text) 30%, transparent);
+  outline-offset: 1px;
+}
+
+.signin-panel button {
+  min-height: 44px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--bg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signin-panel button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.signin-error {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--danger);
+}

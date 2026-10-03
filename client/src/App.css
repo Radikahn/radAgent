@@ -1,0 +1,927 @@
+/* Design tokens; components (including client/src/cards) style themselves with these. Colors are
+   light-dark(light, dark) pairs that follow color-scheme: the system's, unless the theme setting picks one */
+:root {
+  --bg: light-dark(#fbfbfa, #0c0c0e);
+  --text: light-dark(#1d1d1f, #ececee);
+  --muted: light-dark(rgba(29, 29, 31, 0.5), rgba(236, 236, 238, 0.46));
+  --faint: light-dark(rgba(29, 29, 31, 0.06), rgba(255, 255, 255, 0.06));
+  --code-bg: light-dark(rgba(29, 29, 31, 0.045), rgba(255, 255, 255, 0.05));
+  --danger: light-dark(#c4403b, #ff8a80);
+  --radius: 16px;
+
+  /* Glass: barely tinted, so what passes underneath stays visible, just softened */
+  --glass: light-dark(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025));
+  --glass-rim: light-dark(rgba(29, 29, 31, 0.09), rgba(255, 255, 255, 0.08));
+  --glass-edge: light-dark(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.22));
+  --glass-shadow:
+    0 12px 40px light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.45)),
+    0 1px 3px light-dark(rgba(0, 0, 0, 0.04), transparent);
+
+  --column: 720px;
+  --sidebar-width: 256px;
+  /* A breath darker (lighter in dark mode) than the page, so the list reads as its own surface */
+  --sidebar-bg: color-mix(in srgb, var(--text) 2.5%, var(--bg));
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* How much the on-screen keyboard covers; main.tsx keeps it, and it stays 0 on desktop */
+  --keyboard-inset: 0px;
+  /* Below the composer: clear of the home indicator, or a plain gap once the keyboard has lifted the dock */
+  --dock-gap: max(22px, env(safe-area-inset-bottom) + 8px - var(--keyboard-inset));
+
+  color-scheme: light dark;
+  font-family: var(--font);
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Set by the theme setting (client/src/settings/definitions.ts); absent means follow the system */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  /* iOS would otherwise let the whole page rubber-band when dragged where nothing scrolls */
+  overscroll-behavior: none;
+  background: var(--bg);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+/* ---- Window ---- */
+
+.drag-region {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 32px;
+  z-index: 10;
+}
+
+.thread {
+  position: fixed;
+  inset: 0 0 0 var(--sidebar-offset, 0px);
+  overflow-y: auto;
+  transition: left 320ms var(--ease);
+  scrollbar-width: thin;
+  /* Text dissolves at the window edges instead of being cut off (below the status bar on a phone); at the bottom it
+     fades out as it passes the input's lower edge, wherever the keyboard has lifted it, so nothing sharp shows in the
+     gap beneath the glass */
+  --composer-bottom: calc(var(--keyboard-inset) + var(--dock-gap));
+  --thread-mask: linear-gradient(
+    to bottom,
+    transparent,
+    #000 calc(56px + env(safe-area-inset-top)),
+    #000 calc(100% - var(--composer-bottom) - 16px),
+    transparent calc(100% - var(--composer-bottom) + 10px)
+  );
+  -webkit-mask-image: var(--thread-mask);
+  mask-image: var(--thread-mask);
+}
+
+/* ---- Sidebar ---- */
+
+/* The thread and the dock move aside for the open sidebar; narrow windows let it cover them instead. In landscape on
+   a phone it widens by the notch's inset, so the list itself keeps its width */
+.app.sidebar-open {
+  --sidebar-offset: calc(var(--sidebar-width) + env(safe-area-inset-left));
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  width: calc(var(--sidebar-width) + env(safe-area-inset-left));
+  background: var(--sidebar-bg);
+  box-shadow: inset -1px 0 var(--faint);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 320ms var(--ease), visibility 0s 320ms;
+}
+
+.app.sidebar-open .sidebar {
+  transform: none;
+  visibility: visible;
+  transition: transform 320ms var(--ease);
+}
+
+/* Room for the window controls (or a phone's status bar) and the sidebar buttons; dragging here moves the window */
+.sidebar-head {
+  flex: none;
+  height: calc(44px + env(safe-area-inset-top));
+}
+
+/* Room for the settings button, which sits fixed in the bottom corner; the list scrolls above it */
+.sidebar::after {
+  content: "";
+  flex: none;
+  height: calc(52px + env(safe-area-inset-bottom));
+}
+
+/* In the top corner, clear of a phone's notch, so they stay put whether or not the sidebar is open */
+.sidebar-tools {
+  position: fixed;
+  top: calc(8px + env(safe-area-inset-top));
+  left: calc(12px + env(safe-area-inset-left));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+}
+
+/* On macOS they sit beside the window controls instead (main.tsx sets the platform) */
+:root[data-platform="macos"] .sidebar-tools {
+  top: 1px;
+  left: 76px;
+}
+
+/* iOS can't drag the window, and the drag handler would only complain */
+:root[data-platform="ios"] :is(.drag-region, .sidebar-head) {
+  pointer-events: none;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.icon-button:hover {
+  color: var(--text);
+  background: var(--faint);
+}
+
+.icon-button svg,
+.chat-delete svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 10px 16px calc(10px + env(safe-area-inset-left));
+  scrollbar-width: thin;
+}
+
+.chat-empty {
+  margin: 4px 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.chat-row {
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  transition: background 160ms ease;
+}
+
+.chat-row + .chat-row {
+  margin-top: 1px;
+}
+
+.chat-row:hover {
+  background: var(--faint);
+}
+
+.chat-row.active {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.chat-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 4px 7px 10px;
+  border: 0;
+  background: none;
+  font-size: 13.5px;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.chat-row:hover .chat-open,
+.chat-row.active .chat-open {
+  color: var(--text);
+}
+
+.chat-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat-live {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text);
+  animation: breathe 1.8s ease-in-out infinite;
+}
+
+.chat-delete {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 160ms ease, color 160ms ease, background 160ms ease;
+}
+
+.chat-row:hover .chat-delete,
+.chat-delete:focus-visible,
+.chat-delete.confirming {
+  opacity: 1;
+}
+
+.chat-delete:hover {
+  color: var(--text);
+  background: var(--faint);
+}
+
+.chat-delete.confirming {
+  padding: 0 8px;
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .app.sidebar-open {
+    --sidebar-offset: 0px;
+  }
+
+  .app.sidebar-open .sidebar {
+    box-shadow: inset -1px 0 var(--faint), var(--glass-shadow);
+  }
+}
+
+/* On a narrow touchscreen the open list covers the chat (Sidebar.tsx); a tap on what's left of it puts the list away */
+.sidebar-scrim {
+  display: none;
+}
+
+@media (max-width: 720px) and (pointer: coarse) {
+  .sidebar-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 14;
+    background: rgba(0, 0, 0, 0.16);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 320ms var(--ease), visibility 0s 320ms;
+  }
+
+  .app.sidebar-open .sidebar-scrim {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 320ms var(--ease);
+  }
+}
+
+/* Clear of a phone's status bar and, in landscape, its notch; an open sidebar already covers the notch's side.
+   The bottom leaves room for the dock, and for the keyboard while it's up */
+.thread-content {
+  max-width: var(--column);
+  margin: 0 auto;
+  padding: calc(64px + env(safe-area-inset-top)) max(24px, env(safe-area-inset-right) + 12px)
+    calc(var(--dock-height, 88px) + 56px + var(--keyboard-inset))
+    max(24px, env(safe-area-inset-left) + 12px - var(--sidebar-offset, 0px));
+}
+
+/* ---- Conversation ---- */
+
+.turn + .turn {
+  margin-top: 44px;
+}
+
+.prompt {
+  width: fit-content;
+  max-width: 80%;
+  margin-left: auto;
+  padding: 9px 16px;
+  border-radius: 20px;
+  background: var(--faint);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  animation: rise 520ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.reply {
+  margin-top: 28px;
+}
+
+.quiet {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.quiet:hover {
+  color: var(--text);
+}
+
+.activity {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.activity-toggle {
+  display: flex;
+  gap: 10px;
+  max-width: 100%;
+  text-align: left;
+}
+
+.activity-label {
+  flex: none;
+}
+
+.activity-steps {
+  margin: 8px 0 4px;
+  padding-left: 14px;
+  border-left: 2px solid var(--faint);
+  animation: rise 360ms ease backwards;
+}
+
+.activity-steps p {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+}
+
+.activity-steps > :last-child {
+  margin-bottom: 0;
+}
+
+.tool {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.tool-detail {
+  opacity: 0.7;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tool.failed .tool-detail {
+  text-decoration: line-through;
+}
+
+.turn-note {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.turn-note.failed {
+  color: var(--danger);
+}
+
+.pulse {
+  width: 9px;
+  height: 9px;
+  margin: 8px 2px;
+  border-radius: 50%;
+  background: var(--text);
+  animation: breathe 1.8s ease-in-out infinite;
+}
+
+/* ---- Markdown ---- */
+
+.markdown {
+  overflow-wrap: anywhere;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown + .markdown,
+.markdown + .activity {
+  margin-top: 14px;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown pre,
+.markdown blockquote,
+.markdown table {
+  margin: 0 0 0.9em;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  margin: 1.4em 0 0.5em;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.markdown h1 {
+  font-size: 1.45em;
+}
+
+.markdown h2 {
+  font-size: 1.25em;
+}
+
+.markdown h3 {
+  font-size: 1.08em;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 1.4em;
+}
+
+.markdown li + li {
+  margin-top: 0.3em;
+}
+
+.markdown a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--muted);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.markdown code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  padding: 0.12em 0.36em;
+  border-radius: 6px;
+  background: var(--code-bg);
+}
+
+.markdown pre {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--code-bg);
+  overflow-x: auto;
+  line-height: 1.55;
+}
+
+.markdown pre code {
+  padding: 0;
+  background: none;
+  font-size: 13px;
+}
+
+.markdown blockquote {
+  padding-left: 14px;
+  border-left: 2px solid var(--faint);
+  color: var(--muted);
+}
+
+.markdown table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+.markdown th,
+.markdown td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--faint);
+  text-align: left;
+}
+
+.markdown hr {
+  border: 0;
+  border-top: 1px solid var(--faint);
+  margin: 1.6em 0;
+}
+
+/* ---- Dock and glass input ---- */
+
+/* Lifted above the on-screen keyboard while it's up, and kept clear of a phone's home indicator and, in landscape,
+   its notch (which an open sidebar already covers on its side) */
+.dock {
+  position: fixed;
+  inset: auto 0 var(--keyboard-inset) var(--sidebar-offset, 0px);
+  transition: left 320ms var(--ease);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 calc(16px + env(safe-area-inset-right)) var(--dock-gap)
+    max(16px, env(safe-area-inset-left) + 16px - var(--sidebar-offset, 0px));
+  /* The dock spans the window; only its children catch clicks, so the thread stays scrollable around them */
+  pointer-events: none;
+}
+
+.dock > * {
+  pointer-events: auto;
+}
+
+.notice {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.notice .quiet {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Glass surface (the composer, the settings modal); put it on a positioned element so the hairline fits */
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(9px) saturate(1.7);
+  backdrop-filter: blur(9px) saturate(1.7);
+  box-shadow: var(--glass-shadow), inset 0 0 0 1px var(--glass-rim);
+}
+
+/* A gradient hairline: light catches the top edge and fades toward the bottom, like the edge of a pane */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(170deg, var(--glass-edge), transparent 45%, transparent 75%, var(--glass-rim));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.composer {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: min(var(--column), 100%);
+  padding: 7px 7px 7px 20px;
+  border-radius: 26px;
+  transition: box-shadow 400ms ease, transform 400ms ease;
+}
+
+/* With the sidebar closed, narrow windows keep the composer clear of the settings button in the corner */
+.app:not(.sidebar-open) .composer {
+  width: min(var(--column), 100% - 72px);
+}
+
+/* A phone shows the settings button only with the chat list (settings.css), so the composer takes the full width */
+@media (max-width: 720px) and (pointer: coarse) {
+  .app:not(.sidebar-open) .composer {
+    width: 100%;
+  }
+}
+
+.composer:focus-within {
+  box-shadow: var(--glass-shadow), inset 0 0 0 1px color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+.composer textarea {
+  flex: 1;
+  min-width: 0;
+  max-height: 220px;
+  margin: 0;
+  padding: 7px 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.composer textarea::placeholder {
+  color: var(--muted);
+}
+
+.composer-button {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+  transition: background 250ms ease, color 250ms ease, transform 150ms ease;
+}
+
+.composer-button:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.composer-button:disabled {
+  background: var(--faint);
+  color: var(--muted);
+  cursor: default;
+}
+
+.composer-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.composer-button rect {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* Slash commands: the matches while a name is being typed, then what the chosen one does */
+.command-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  margin: 0;
+  padding: 5px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.7);
+  backdrop-filter: blur(12px) saturate(1.7);
+  box-shadow: var(--glass-shadow), inset 0 0 0 1px var(--glass-rim);
+  font-size: 13.5px;
+}
+
+.command,
+.command-active {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 11px;
+}
+
+.command {
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.command.selected,
+.command:hover {
+  background: var(--faint);
+}
+
+.command-name {
+  font-weight: 550;
+}
+
+.command-hint {
+  color: var(--muted);
+}
+
+.prompt-command {
+  margin-right: 6px;
+  font-weight: 550;
+  color: var(--muted);
+}
+
+/* ---- Touch ---- */
+
+/* Fingertip-sized targets: 44px, Apple's minimum, while each control is drawn at the size it was */
+@media (pointer: coarse) {
+  :root {
+    /* Taps answer with the controls' own states rather than iOS's grey flash */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* iOS zooms into any field under 16px when it takes focus */
+  input,
+  textarea,
+  select,
+  .composer textarea {
+    font-size: max(16px, 1em);
+  }
+
+  /* The padding is hit area, and the hover tint stays on the 28px middle (the hover's background shorthand would
+     reset the clip, hence both) */
+  .icon-button,
+  .icon-button:hover {
+    background-clip: content-box;
+  }
+
+  .icon-button {
+    width: 44px;
+    height: 44px;
+    padding: 8px;
+    border-radius: 16px;
+  }
+
+  /* Pulled back by that padding, so the icons sit where they did */
+  .sidebar-tools {
+    top: env(safe-area-inset-top);
+    left: calc(4px + env(safe-area-inset-left));
+    gap: 0;
+    height: 44px;
+  }
+
+  .sidebar-head {
+    height: calc(52px + env(safe-area-inset-top));
+  }
+
+  .chat-open {
+    min-height: 44px;
+  }
+
+  .chat-delete {
+    min-width: 44px;
+    height: 44px;
+    margin-right: 0;
+  }
+
+  /* Smaller round buttons get an invisible margin to catch the tap */
+  .composer-button,
+  .composer-attach {
+    position: relative;
+  }
+
+  .composer-button::after,
+  .composer-attach::after,
+  .attachment-remove::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+  }
+
+  .attachment-remove::after {
+    inset: -12px;
+  }
+}
+
+/* Nothing hovers on a touchscreen, so controls that wait for the pointer show all along */
+@media (hover: none) {
+  .chat-delete,
+  .attachment-remove {
+    opacity: 1;
+  }
+}
+
+/* ---- Motion ---- */
+
+/* Each word condenses out of a light blur as it's revealed */
+.w {
+  animation: condense 600ms cubic-bezier(0.2, 0.6, 0.2, 1) backwards;
+}
+
+.materialize {
+  animation: materialize 700ms cubic-bezier(0.2, 0.6, 0.2, 1) backwards;
+}
+
+@keyframes condense {
+  from {
+    opacity: 0;
+    filter: blur(2.5px);
+  }
+}
+
+@keyframes materialize {
+  from {
+    opacity: 0;
+    filter: blur(7px);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.72);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}
+
+/* A highlight sweeps through the label while a step is in progress */
+.shimmer {
+  background: linear-gradient(90deg, var(--muted) 35%, var(--text) 50%, var(--muted) 65%) 0 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 2.4s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .w,
+  .materialize,
+  .prompt,
+  .activity-steps {
+    animation: none;
+  }
+  .thread,
+  .dock,
+  .sidebar,
+  .app.sidebar-open .sidebar,
+  .sidebar-scrim,
+  .app.sidebar-open .sidebar-scrim {
+    transition: none;
+  }
+  .shimmer,
+  .pulse {
+    animation-duration: 6s;
+  }
+}

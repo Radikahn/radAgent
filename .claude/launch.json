@@ -1,0 +1,46 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "client-web",
+      "runtimeExecutable": "bunx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5199",
+        "--strictPort"
+      ],
+      "cwd": "client",
+      "port": 5199
+    },
+    {
+      "name": "agent-server",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "radagent",
+        "--serve",
+        "--port",
+        "8787"
+      ],
+      "cwd": "agent",
+      "port": 8787
+    },
+    {
+      "name": "client-web-signin",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VITE_AWS_REGION=us-west-2",
+        "VITE_RUNTIME_ARN=arn:aws:bedrock-agentcore:us-west-2:000000000000:runtime/preview",
+        "VITE_COGNITO_CLIENT_ID=preview",
+        "bunx",
+        "vite",
+        "--port",
+        "5200",
+        "--strictPort"
+      ],
+      "cwd": "client",
+      "port": 5200
+    }
+  ]
+}

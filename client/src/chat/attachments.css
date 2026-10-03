@@ -1,0 +1,183 @@
+/* Attached files in the composer and above sent prompts, plus the composer's attach button and drop overlay */
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attachment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 240px;
+  height: 48px;
+  padding: 0 14px 0 8px;
+  border-radius: 12px;
+  background: var(--faint);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.attachment.thumbnail {
+  width: 48px;
+  padding: 0;
+  background: none;
+}
+
+.attachment img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  outline: 1px solid var(--faint);
+  outline-offset: -1px;
+}
+
+.attachment-type {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.attachment-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.attachment-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.attachment:hover .attachment-remove,
+.attachment-remove:focus-visible {
+  opacity: 1;
+}
+
+.attachment-remove svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Above a sent prompt: right-aligned like the bubble, with images large enough to recognize */
+.prompt-attachments {
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.prompt-attachments .attachment.thumbnail {
+  width: auto;
+  height: 120px;
+}
+
+.prompt-attachments .attachment img {
+  width: auto;
+  max-width: 220px;
+}
+
+/* ---- Composer ---- */
+
+.composer {
+  flex-wrap: wrap;
+}
+
+/* Pending files sit on their own row above the input, lined up with the attach button */
+.composer-tray {
+  flex-basis: 100%;
+  margin-left: -13px;
+  padding: 6px 0 4px;
+}
+
+.composer-attach {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  /* The composer insets its text 20px; this pulls the button out to the 7px the send button sits at */
+  margin-left: -13px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 200ms ease, background 200ms ease;
+}
+
+.composer-attach:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--faint);
+}
+
+.composer-attach:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.composer-attach svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.composer-problem {
+  flex-basis: 100%;
+  margin: 2px 0 4px -13px;
+  font-size: 12.5px;
+  color: var(--danger);
+}
+
+/* A file dragged over the window: the app dims and says where it will go */
+.drop-zone {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--muted);
+  font-size: 15px;
+  pointer-events: none;
+  animation: materialize 250ms ease backwards;
+}

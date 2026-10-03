@@ -1,0 +1,9 @@
+.venv
+.agent
+.env
+.env.*
+**/__pycache__
+**/*.pyc
+src/radagent/prompts/secret_prompts
+Dockerfile
+.dockerignore

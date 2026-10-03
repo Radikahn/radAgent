@@ -1,0 +1,9 @@
+# Terraform working dirs and state (state lives in S3; bootstrap state stays local)
+.terraform/
+*.tfstate*
+
+# Local inputs
+terraform.tfvars
+backend.hcl
+
+# .terraform.lock.hcl is committed on purpose.

@@ -1,0 +1,393 @@
+/* The vim-style keyboard layer: block cursor, search highlights, status line, which-key, hints, command line and
+   help. Colors come from the theme variables in App.css */
+
+:root {
+  --vim-tint: color-mix(in srgb, var(--text) 5%, transparent);
+  --vim-ring: color-mix(in srgb, var(--text) 15%, transparent);
+  --vim-match: light-dark(rgba(255, 190, 0, 0.3), rgba(255, 196, 0, 0.26));
+  --vim-match-current: light-dark(#ffc933, #e8b52a);
+}
+
+/* ---- Cursor ---- */
+
+/* Like vim's cursorline: a soft tint around the block, shown while it has focus (normal mode) */
+[data-vim-cursor]:focus,
+.thread:focus {
+  outline: none;
+}
+
+.thread [data-vim-cursor] {
+  transition: background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.thread [data-vim-cursor]:focus {
+  background-color: var(--vim-tint);
+  box-shadow: 0 0 0 6px var(--vim-tint), 0 0 0 7px var(--vim-ring);
+}
+
+/* Blocks with no corners of their own get soft ones, so the tint doesn't end in sharp edges */
+.thread :is(p, li, h1, h2, h3, h4, h5, h6, blockquote, table, .activity, .turn-note, .report-title, .research-writing)[data-vim-cursor] {
+  border-radius: 4px;
+}
+
+/* The message bubble already has a tint, so it gets a focus ring instead */
+.thread .prompt[data-vim-cursor]:focus {
+  background-color: color-mix(in srgb, var(--text) 9%, transparent);
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px color-mix(in srgb, var(--text) 32%, transparent);
+}
+
+.chat-row:has(> [data-vim-cursor]:focus) {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  box-shadow: inset 0 0 0 1px var(--vim-ring);
+}
+
+.chat-row:has(> [data-vim-cursor]:focus) .chat-open {
+  color: var(--text);
+}
+
+/* ---- Search ---- */
+
+::highlight(vim-search) {
+  background-color: var(--vim-match);
+}
+
+::highlight(vim-search-current) {
+  background-color: var(--vim-match-current);
+  color: #1d1d1f;
+}
+
+/* ---- Status line ---- */
+
+/* Under the input, in the strip along the window's bottom edge */
+.vim-status {
+  position: fixed;
+  right: 14px;
+  bottom: 4px;
+  z-index: 30;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+  max-width: calc(100% - 64px);
+  font: 11px/16px var(--mono);
+  color: var(--muted);
+  pointer-events: none;
+  user-select: none;
+}
+
+.vim-said {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.vim-message {
+  color: var(--text);
+}
+
+.vim-message.error {
+  color: var(--danger);
+}
+
+.vim-confirm {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.vim-pending {
+  color: var(--text);
+}
+
+.vim-mode {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+/* Writing is the app's everyday state, so its label steps back; the others are worth noticing */
+.vim-mode.mode-insert {
+  opacity: 0.55;
+}
+
+.vim-mode:is(.mode-hints, .mode-command, .mode-search, .mode-help) {
+  color: var(--text);
+}
+
+.vim-where {
+  white-space: nowrap;
+}
+
+/* ---- Which-key ---- */
+
+.vim-which-key {
+  position: fixed;
+  right: 12px;
+  bottom: 26px;
+  z-index: 31;
+  min-width: 220px;
+  max-width: min(380px, 100% - 24px);
+  padding: 8px 6px 6px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.7);
+  backdrop-filter: blur(12px) saturate(1.7);
+  box-shadow: var(--glass-shadow), inset 0 0 0 1px var(--glass-rim);
+  font-size: 13px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.vim-which-title {
+  padding: 0 8px 4px;
+  font: 600 11px/16px var(--mono);
+  color: var(--muted);
+}
+
+.vim-which-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 3px 8px;
+}
+
+.vim-which-row kbd {
+  flex: none;
+  min-width: 3.5em;
+  font: 600 12px var(--mono);
+  color: var(--text);
+}
+
+.vim-which-row span {
+  color: var(--muted);
+}
+
+/* ---- Hints ---- */
+
+/* A full-window layer in the top layer (a popover); the browser's popover box styles are undone */
+.vim-hints {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: transparent;
+  color: inherit;
+  pointer-events: none;
+}
+
+.vim-hint {
+  position: absolute;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font: 700 11px/15px var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  animation: vim-pop 160ms var(--ease) backwards;
+}
+
+.vim-hint-typed {
+  opacity: 0.4;
+}
+
+@keyframes vim-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+/* ---- Command line ---- */
+
+/* Floats just above the input, lined up with it */
+.vim-line-dock {
+  position: fixed;
+  inset: auto 0 calc(var(--dock-height, 88px) + 2px) var(--sidebar-offset, 0px);
+  z-index: 25;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+  transition: left 320ms var(--ease);
+}
+
+.vim-line {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(var(--column), 100%);
+  padding: 9px 18px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.7);
+  backdrop-filter: blur(12px) saturate(1.7);
+  box-shadow: var(--glass-shadow), inset 0 0 0 1px color-mix(in srgb, var(--text) 16%, transparent);
+  font: 14px/1.4 var(--mono);
+  pointer-events: auto;
+  animation: rise 260ms var(--ease) backwards;
+}
+
+.vim-line-prefix {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.vim-line input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.vim-line input::placeholder {
+  color: color-mix(in srgb, var(--text) 25%, transparent);
+}
+
+.vim-line-count {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The slash command menu's look (App.css), anchored to the line instead of the input */
+.vim-completions {
+  font-family: var(--font);
+}
+
+/* ---- Help ---- */
+
+.vim-help {
+  width: min(820px, 100% - 32px);
+  max-height: min(760px, 100% - 64px);
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  color: var(--text);
+  overflow: hidden;
+  animation: rise 420ms var(--ease);
+}
+
+.vim-help[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Literal colors, since older engines don't give ::backdrop the page's variables */
+.vim-help::backdrop {
+  background: rgba(0, 0, 0, 0.16);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.vim-help-panel {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 26px 22px;
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  outline: none;
+  scrollbar-width: thin;
+}
+
+.vim-help-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.vim-help-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.vim-help-hint {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.vim-help-intro {
+  max-width: 62ch;
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.vim-help-grid {
+  columns: 2 300px;
+  column-gap: 36px;
+}
+
+.vim-help-grid section {
+  break-inside: avoid;
+  padding-top: 18px;
+}
+
+.vim-help-grid h3 {
+  margin: 0 0 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.vim-help-grid dl {
+  margin: 0;
+}
+
+.vim-help-row {
+  display: grid;
+  grid-template-columns: minmax(104px, max-content) 1fr;
+  gap: 12px;
+  padding: 3px 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.vim-help-row dt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.vim-help-row dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+.vim-key {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--faint);
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--text) 10%, transparent);
+  font: 600 11.5px/1.5 var(--mono);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thread [data-vim-cursor],
+  .vim-line-dock {
+    transition: none;
+  }
+  .vim-hint,
+  .vim-line,
+  .vim-help {
+    animation: none;
+  }
+}

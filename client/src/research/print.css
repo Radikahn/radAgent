@@ -1,0 +1,178 @@
+/* The PDF export: a report sheet outside the app's root that is only ever seen through the print panel
+   (see exportReport.ts). Printing shows the sheet alone, in light colors whatever the app's theme */
+
+#research-print {
+  display: none;
+}
+
+/* The native print panel starts with no page margins, so they come from here: @page for top and bottom where
+   WebKit honors it, padding for the sides everywhere */
+@page {
+  margin: 16mm 0 18mm;
+}
+
+@media print {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body > :not(#research-print) {
+    display: none !important;
+  }
+
+  #research-print {
+    display: block;
+    padding: 0 17mm;
+    color: #1d1d1f;
+    font: 10.5pt/1.6 "Iowan Old Style", Charter, Georgia, serif;
+  }
+}
+
+#research-print .print-report {
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --quiet: #6e6e73;
+  --link: #0b57d0;
+}
+
+#research-print header {
+  margin-bottom: 18pt;
+  padding-bottom: 12pt;
+  border-bottom: 1px solid #d9d9de;
+}
+
+#research-print .print-kicker {
+  margin: 0 0 6pt;
+  font: 600 8pt/1.4 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+
+#research-print h1 {
+  margin: 0 0 6pt;
+  font: 700 21pt/1.2 var(--sans);
+  letter-spacing: -0.01em;
+}
+
+#research-print .print-meta {
+  margin: 0;
+  font: 9pt/1.4 var(--sans);
+  color: var(--quiet);
+}
+
+#research-print h2 {
+  margin: 20pt 0 6pt;
+  font: 650 13pt/1.3 var(--sans);
+  break-after: avoid;
+}
+
+#research-print h3 {
+  margin: 12pt 0 4pt;
+  font: 600 11pt/1.3 var(--sans);
+  break-after: avoid;
+}
+
+#research-print p,
+#research-print ul,
+#research-print ol,
+#research-print table,
+#research-print blockquote {
+  margin: 0 0 8pt;
+}
+
+#research-print ul,
+#research-print ol {
+  padding-left: 16pt;
+}
+
+#research-print li + li {
+  margin-top: 2pt;
+}
+
+#research-print .print-summary > p:not(.print-cites) {
+  font-size: 11.5pt;
+}
+
+#research-print a {
+  color: inherit;
+  text-decoration: none;
+}
+
+#research-print .print-cite {
+  font: 500 6.5pt/1 var(--sans);
+  margin-left: 1pt;
+}
+
+#research-print .print-cite a {
+  color: var(--link);
+}
+
+#research-print .print-cites {
+  margin-top: 4pt;
+  font: 8pt/1.5 var(--sans);
+  color: var(--quiet);
+}
+
+#research-print .print-cites a {
+  color: var(--link);
+}
+
+#research-print table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 8.5pt/1.4 var(--sans);
+  break-inside: avoid;
+}
+
+#research-print th,
+#research-print td {
+  padding: 4pt 6pt;
+  border-bottom: 1px solid #e3e3e8;
+  text-align: left;
+  vertical-align: top;
+}
+
+#research-print th {
+  font-weight: 600;
+}
+
+#research-print blockquote {
+  padding-left: 10pt;
+  border-left: 2px solid #d9d9de;
+  color: #48484a;
+}
+
+#research-print code {
+  font: 9pt ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+#research-print .print-sources {
+  margin-top: 24pt;
+  padding-top: 4pt;
+  border-top: 1px solid #d9d9de;
+}
+
+#research-print .print-sources ol {
+  font: 8.5pt/1.45 var(--sans);
+}
+
+#research-print .print-sources li {
+  break-inside: avoid;
+}
+
+#research-print .print-date,
+#research-print .print-url {
+  color: var(--quiet);
+}
+
+#research-print .print-url {
+  font-size: 7.5pt;
+  word-break: break-all;
+}

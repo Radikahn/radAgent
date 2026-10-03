@@ -1,0 +1,280 @@
+/* Card styles; colors come from the theme variables in App.css */
+
+.places-card {
+  margin: 4px 0 8px;
+}
+
+.places-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.places-header > span:first-child {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.places-query {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Side-scrolling strip that bleeds slightly so card shadows aren't clipped */
+.places-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  margin: 0 -8px;
+  padding: 4px 8px 12px;
+  scrollbar-width: thin;
+}
+
+.place {
+  flex: 0 0 264px;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid var(--glass-rim);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+
+.place-map {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-bottom: 1px solid var(--glass-rim);
+}
+
+.static-map {
+  position: relative;
+  overflow: hidden;
+  background: var(--faint);
+}
+
+.static-map img {
+  position: absolute;
+  max-width: none;
+  user-select: none;
+}
+
+/* OpenStreetMap has no dark style; inverting keeps water blue-ish and roads readable. Dark is the system's unless
+   the theme setting picks one, and a filter can't be a light-dark() pair, hence both rules */
+:root[data-theme="dark"] .static-map img {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.85) saturate(0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .static-map img {
+    filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.85) saturate(0.6);
+  }
+}
+
+.map-pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 32px;
+  /* The pin's tip, not its middle, marks the spot */
+  transform: translate(-50%, -100%);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+}
+
+.map-pin path {
+  fill: #e5484d;
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+.map-pin circle {
+  fill: #fff;
+}
+
+.place-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px 8px;
+  min-width: 0;
+}
+
+.place-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.place-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.place-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.place-hours {
+  white-space: pre-line;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.place-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.place-contact a {
+  color: var(--text);
+  text-decoration-color: var(--muted);
+  text-underline-offset: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.place-actions {
+  display: flex;
+  gap: 6px;
+  padding: 4px 14px 14px;
+}
+
+.place-action {
+  flex: 1 1 auto;
+  padding: 6px 8px;
+  white-space: nowrap;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--faint);
+  transition: background 0.15s;
+}
+
+.place-action:hover {
+  background: var(--code-bg);
+  filter: brightness(0.92);
+}
+
+/* Tall enough for a fingertip */
+@media (pointer: coarse) {
+  .place-action {
+    padding-block: 12px;
+  }
+}
+
+.places-attribution {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---- Links ---- */
+
+.links-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+
+.link-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid var(--glass-rim);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.link-row:hover {
+  background: var(--faint);
+}
+
+.link-mark {
+  flex: 0 0 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--faint);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.link-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.link-title,
+.link-host {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.link-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.link-note {
+  font-size: 13px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.link-host {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.link-arrow {
+  color: var(--muted);
+  font-size: 14px;
+}
