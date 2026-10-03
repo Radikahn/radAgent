@@ -23,6 +23,9 @@ TIMEOUT_S: int = 15
 MAX_RETRY_WAIT_S: int = 5
 # Access tokens are renewed this long before Spotify says they expire
 TOKEN_MARGIN_S: int = 60
+# Keys pushed or renewed with scripts/put-secrets.sh reach a running session by re-reading the secret, at most this often
+SECRET_RELOAD_INTERVAL_S: int = 60
+CREDENTIAL_NAMES: tuple[str, ...] = ("SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET", "SPOTIFY_REFRESH_TOKEN")
 
 LOGIN_HINT: str = (
     "The user has to connect Spotify: set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in agent/.env, run "
@@ -42,6 +45,7 @@ _access_token: str | None = None
 _expires_at: float = 0.0
 # Spotify may hand out a new refresh token when renewing; this process keeps using the newest
 _refresh_token: str | None = None
+_reloaded_at: float = float("-inf")
 
 
 
@@ -117,6 +121,33 @@ def token_request(form: dict[str, str], client_id: str, client_secret: str) -> d
         raise SpotifyError(0, f"Couldn't reach Spotify: {e.reason}") from None
 
 
+def _reload_credentials() -> bool:
+    """
+    Take the Spotify keys from the agent's secret as it is now; True when they changed
+
+    AgentCore keeps a session on the environment it started with, and the apps reuse one session for as long as
+    they're connected, so keys pushed after it started (a first login, or the one every 6 months) would otherwise
+    wait for the session to end. Does nothing locally, where the keys come from agent/.env
+    """
+    global _access_token, _refresh_token, _reloaded_at
+    if time.monotonic() - _reloaded_at < SECRET_RELOAD_INTERVAL_S:
+        return False
+    _reloaded_at = time.monotonic()
+
+    from radagent.server.settings import read_secret
+    settings = read_secret() or {}
+    changed = False
+    for name in CREDENTIAL_NAMES:
+        value = settings.get(name)
+        if isinstance(value, str) and value.strip() and os.environ.get(name) != value:
+            os.environ[name] = value
+            changed = True
+    if changed:
+        _access_token = None
+        _refresh_token = None
+    return changed
+
+
 def _token(refused: str | None = None) -> str:
     """A current access token; `refused` is one the API just turned down, which forces a new one"""
     global _access_token, _expires_at, _refresh_token
@@ -124,22 +155,30 @@ def _token(refused: str | None = None) -> str:
         if _access_token and _access_token != refused and time.monotonic() < _expires_at:
             return _access_token
 
-        # Read on use rather than import, so secrets loaded from AWS after startup still count
-        client_id = os.getenv("SPOTIFY_CLIENT_ID", "").strip()
-        client_secret = os.getenv("SPOTIFY_CLIENT_SECRET", "").strip()
-        refresh_token = _refresh_token or os.getenv("SPOTIFY_REFRESH_TOKEN", "").strip()
-        missing = [name for name, value in (("SPOTIFY_CLIENT_ID", client_id),
-                                            ("SPOTIFY_CLIENT_SECRET", client_secret),
-                                            ("SPOTIFY_REFRESH_TOKEN", refresh_token)) if not value]
-        if missing:
-            raise SpotifyNotConnected(f"Spotify isn't connected ({', '.join(missing)} not set).")
+        for attempt in range(2):
+            # Read on use rather than import, so keys reloaded from the secret count
+            client_id = os.getenv("SPOTIFY_CLIENT_ID", "").strip()
+            client_secret = os.getenv("SPOTIFY_CLIENT_SECRET", "").strip()
+            refresh_token = _refresh_token or os.getenv("SPOTIFY_REFRESH_TOKEN", "").strip()
+            missing = [name for name, value in zip(CREDENTIAL_NAMES, (client_id, client_secret, refresh_token))
+                       if not value]
+            try:
+                if missing:
+                    raise SpotifyNotConnected(f"Spotify isn't connected ({', '.join(missing)} not set).")
+                data = token_request({"grant_type": "refresh_token", "refresh_token": refresh_token},
+                                     client_id, client_secret)
+            except SpotifyNotConnected:
+                # Missing or refused keys may have been pushed or renewed since this session started
+                if attempt == 0 and _reload_credentials():
+                    continue
+                raise
 
-        data = token_request({"grant_type": "refresh_token", "refresh_token": refresh_token}, client_id, client_secret)
-        _access_token = data["access_token"]
-        _expires_at = time.monotonic() + int(data.get("expires_in", 3600)) - TOKEN_MARGIN_S
-        if data.get("refresh_token"):
-            _refresh_token = data["refresh_token"]
-        return _access_token
+            _access_token = data["access_token"]
+            _expires_at = time.monotonic() + int(data.get("expires_in", 3600)) - TOKEN_MARGIN_S
+            if data.get("refresh_token"):
+                _refresh_token = data["refresh_token"]
+            return _access_token
+        raise AssertionError("unreachable")
 
 
 
