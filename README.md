@@ -27,7 +27,7 @@ expects. For development, run both on this machine; the development build connec
 (`client/.env.development`) with no sign-in:
 
 ```sh
-cd agent && uv run radagent --serve --port 8787     # the agent; listens on 127.0.0.1 only
+cd agent && uv run radagent --dev                   # the agent on 127.0.0.1:8787
 cd client && bun install && bun tauri dev           # the app, with hot reload
 ```
 

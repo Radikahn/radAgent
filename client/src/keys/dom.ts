@@ -34,6 +34,7 @@ const BLOCKS = [
   ".reply > .materialize",
   ".place",
   ".link-row",
+  ".video",
   ".research-header",
   ".crew-toggle",
   ".window",
