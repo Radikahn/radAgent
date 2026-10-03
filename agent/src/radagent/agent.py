@@ -9,7 +9,7 @@ from radagent.chats import ChatStore
 from radagent.config import MODEL, TRUSTED_DOMAINS
 from radagent.media import Attachment, MediaGuard, prompt_content
 
-from radagent.prompts.lib.prompt import initalize_agent
+from radagent.prompts.lib.prompt import append_tools, initalize_agent
 from radagent.tools import TOOLS
 from radagent.tools.chats import CROSS_CHAT, CROSS_CHAT_NOTE, chat_tools
 from radagent.tools.web import TrustGate
@@ -17,6 +17,7 @@ from strands.agent import AgentResult
 from strands_harness import create_harness
 from strands_harness.memory import MEMORY_STORE_NAME, resolve_memory
 from strands_harness.models import resolve_web_fetch_model
+from strands_harness.prompt import build_system_prompt
 from strands.memory import ExtractionConfig, MemoryManager, MemoryStore, ModelExtractor
 from strands.session import SnapshotSessionManager
 from strands.storage import LocalFileStorage, S3Storage
@@ -136,6 +137,13 @@ class RadAgent:
             plugins = plugins,
             memory = _user_turn_memory(model, memory_storage),
             **agent_kwargs
+        )
+
+        # The prompt ends on a list of every tool: ours, the harness built-ins and the ones its plugins vend, which are
+        # only known once it's built. Rebuilding the prompt from the instructions also replaces the one a reopened
+        # chat's session restored, so that chat gets the current prompt and tools rather than a second list
+        self.AGENT.system_prompt = build_system_prompt(
+            append_tools(system_prompt, self.AGENT.tool_registry.get_all_tools_config())
         )
 
 
