@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { listenForGoogle } from "./remote/google";
 
 /**
  * Which platform the window is on, for the CSS that differs (App.css): macOS keeps its window controls in the top
@@ -37,6 +38,8 @@ function trackKeyboard() {
 
 document.documentElement.dataset.platform = detectPlatform();
 trackKeyboard();
+// Google's consent page can send the browser back to the app at any moment, Settings open or not
+listenForGoogle();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

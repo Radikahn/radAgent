@@ -20,6 +20,7 @@ from radagent.cards import is_card
 from radagent.chats import ChatStore
 from radagent.commands import COMMANDS, Command, CommandRun
 from radagent.media import Attachment, MediaError
+from radagent.server import google
 from radagent.server.history import describe, to_turns
 from radagent.storage import StorageUnavailable
 
@@ -418,18 +419,22 @@ def dispatch(chats: Chats, client: Client, command: Any) -> None:
          "attachments"?: [{"name": str, "data": base64}]}
         {"type": "cancel", "chat": id}
         {"type": "delete", "chat": id}
+        {"type": "google_status" | "google_connect" | "google_disconnect", ...}   see radagent.server.google
     A chat that has never had a message has nothing saved; its first prompt creates it. "command": "memory" is
     /memory, which lets that one message look through the other chats, and "code" is /code, which asks for code
     in copyable code blocks (radagent.coding); any command in radagent.commands, such as "research", runs that
     command on the text instead of the agent answering it. Attachments are images, PDFs, Office and text files;
     a prompt may carry them without text
 
-    Events out: ready, chats, history (to the client that opened the chat), error, and per turn turn_start, text,
+    Events out: ready, chats, history (to the client that opened the chat), error, google, and per turn turn_start, text,
     thinking, tool_start, tool_input, tool_end, card, command_event ({"command": name, "event": ...}, the command's
     own progress) and turn_end, each carrying the `chat` and `turn` it belongs to, to every client
     """
     if not isinstance(command, dict):
         client.send("error", message = "Commands are JSON objects")
+        return
+    if command.get("type") in google.COMMANDS:
+        google.handle(chats.hub, client, command)
         return
 
     kind = command.get("type")

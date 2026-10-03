@@ -45,6 +45,8 @@ fn secret_delete(name: String) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        // Catches Google's redirect after Connect Google in Settings; scripts/install-*.sh register its scheme
+        .plugin(tauri_plugin_deep_link::init())
         .invoke_handler(tauri::generate_handler![secret_get, secret_set, secret_delete, export::export_save])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
