@@ -365,3 +365,110 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* ---- Spotify (the header is the places card's) ---- */
+
+.spotify-card {
+  margin: 4px 0 8px;
+}
+
+/* One panel of rows; long lists (a 50-song library page) scroll inside it rather than stretching the thread */
+.spotify-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 432px;
+  overflow-y: auto;
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid var(--glass-rim);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  scrollbar-width: thin;
+}
+
+.spotify-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.spotify-row + .spotify-row {
+  border-top: 1px solid var(--glass-rim);
+}
+
+a.spotify-row:hover {
+  background: var(--faint);
+}
+
+.spotify-art {
+  flex: 0 0 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--faint);
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.spotify-art.round {
+  border-radius: 50%;
+}
+
+.spotify-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+
+.spotify-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spotify-title,
+.spotify-subtitle {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.spotify-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.spotify-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.spotify-detail {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Spotify's green, which reads on both themes */
+.spotify-now {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #1db954;
+  vertical-align: middle;
+}
