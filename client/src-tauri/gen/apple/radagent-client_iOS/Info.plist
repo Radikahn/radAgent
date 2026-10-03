@@ -40,5 +40,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo or video to attach to a message.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record sound with a video you attach to a message.</string>
 </dict>
 </plist>

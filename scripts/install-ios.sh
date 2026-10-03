@@ -11,8 +11,9 @@
 # A free team's signature lasts 7 days: run this again within the week. Installing over the old app keeps its data
 # and the sign-in in the Keychain.
 #
-# If signing fails here (free teams sometimes need Xcode to create the profile first): `bun tauri ios open` in
-# client/, pick the iPhone, set the scheme's Run configuration to Release, and press Run; after that this script works.
+# If signing fails here (free teams sometimes need Xcode to create the profile first): with the iPhone connected,
+# `bun tauri ios open` in client/, select the radagent-client_iOS target > Signing & Capabilities, pick your Personal
+# Team, and wait for Xcode to make the profile; then run this script again.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -30,6 +31,9 @@ if [[ -z "$device" ]]; then
   xcrun devicectl list devices >&2
   exit 1
 fi
+
+# Tauri's Swift side doesn't build or link with Xcode 27 as is; scripts/ios-swift/swift says why
+export PATH="$PWD/scripts/ios-swift:$PATH"
 
 cd client
 bun install --frozen-lockfile
