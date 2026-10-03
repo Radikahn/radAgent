@@ -199,6 +199,269 @@
   transform: translateX(16px);
 }
 
+/* A small rounded button; .primary is the filled one */
+.pill {
+  flex: none;
+  padding: 5px 13px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--faint);
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background 160ms ease, opacity 160ms ease;
+}
+
+.pill:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.pill.primary {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.pill.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 84%, transparent);
+}
+
+.pill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pill:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--text) 40%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---- System prompt ---- */
+
+.prompt-setting {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.prompt-setting-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Three equal slots across the row, each name cut short rather than pushing the others out */
+.prompt-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.prompt-slots span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.prompt-slots b {
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+.prompt-slots input:disabled + span {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.prompt-slots label:hover input:disabled + span {
+  color: var(--muted);
+}
+
+/* ---- Prompt editor ---- */
+
+.prompt-editor {
+  width: min(720px, 100% - 32px);
+  height: min(780px, 100% - 64px);
+  max-height: none;
+}
+
+/* Nearly opaque, since it opens over the settings, which would otherwise show through */
+.prompt-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 16px;
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+}
+
+.prompt-intro {
+  margin: 4px 0 12px;
+}
+
+.prompt-tabs {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.prompt-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.prompt-tabs button:hover,
+.prompt-tabs button.selected {
+  color: var(--text);
+  background: var(--faint);
+}
+
+.prompt-tabs button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--text) 40%, transparent);
+  outline-offset: 2px;
+}
+
+.prompt-tab-number {
+  flex: none;
+  font-weight: 600;
+}
+
+.prompt-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prompt-tab-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.prompt-tab-active {
+  flex: none;
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.prompt-slot {
+  flex: 1;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.prompt-name,
+.prompt-text {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--faint);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+  transition: border-color 160ms ease;
+}
+
+.prompt-name:focus,
+.prompt-text:focus {
+  border-color: color-mix(in srgb, var(--text) 30%, transparent);
+}
+
+.prompt-name {
+  flex: none;
+  padding: 8px 12px;
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.prompt-text {
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  resize: none;
+}
+
+.prompt-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.prompt-status {
+  min-width: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (pointer: coarse) {
+  /* Below 16px iOS zooms the page in on focus */
+  .prompt-name,
+  .prompt-text {
+    font-size: 16px;
+  }
+
+  .pill {
+    padding: 8px 15px;
+  }
+}
+
+/* On a phone the editor takes the screen, and the tabs drop their badges for room */
+@media (max-width: 720px) {
+  .prompt-editor {
+    width: calc(100% - 16px);
+    height: calc(100% - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .prompt-panel {
+    padding: 14px 16px;
+  }
+
+  /* The number of the one in use is shown filled instead */
+  .prompt-tab-active {
+    display: none;
+  }
+
+  .prompt-tabs button.in-use .prompt-tab-number {
+    padding: 0 5px;
+    border-radius: 6px;
+    background: var(--text);
+    color: var(--bg);
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

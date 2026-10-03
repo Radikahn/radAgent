@@ -99,6 +99,16 @@ puts it into effect at startup and on every change. Read values anywhere with `s
 `settings.subscribe()`), or `useSettings()` in React; the store itself is plain TypeScript. Settings come in the
 kinds in `schema.ts` (`choice` and `toggle` so far); a new kind gets a control in `SettingsModal.tsx`.
 
+### Prompts
+
+The system prompt is kept with the chats, so every device shares it: in the bucket under `prompts/prompts.json`
+on AWS, or in `agent/.agent/prompts/` locally (`agent/src/radagent/prompts/presets.py`). It has three slots. The
+first time the agent starts, slot 1 gets the prompt it ran with before (the secret prompt, or
+`agent/src/radagent/prompts/system_prompt.txt`) and slots 2 and 3 start empty. Under Agent in the settings, tap a
+slot to switch every chat to it from its next reply; **Edit prompts** opens a menu where each slot's name and text
+can be changed (⌘S saves). After that the file is what counts, so changing the secret prompt no longer changes the
+agent's; delete `prompts/prompts.json` to start over from it.
+
 ### Chats and memory
 
 Each chat is its own conversation with its own context and memory, kept in `agent/.agent/chats/<id>/`: the saved

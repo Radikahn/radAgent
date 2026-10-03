@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { signOut } from "../remote/auth";
 import { remote } from "../remote/config";
+import { PromptEditor } from "./PromptEditor";
+import { prompts, slotLabel, usePrompts } from "./prompts";
 import type { ChoiceSetting, Setting, ToggleSetting, ValueOf } from "./schema";
 import { settings, type SettingKey } from "./store";
 import { useSettings } from "./useSettings";
@@ -53,8 +55,57 @@ for (const key of Object.keys(settings.definitions) as SettingKey[]) {
   sections.set(section, [...(sections.get(section) ?? []), key]);
 }
 
+/**
+ * The agent's prompt presets, one tap to swap between, and the button to the menu that edits them. They live with the
+ * agent rather than in definitions.ts, which holds this device's settings
+ */
+function PromptSetting({ onEdit }: { onEdit: () => void }) {
+  const { presets, error } = usePrompts();
+  return (
+    <div className="setting prompt-setting">
+      <div className="prompt-setting-top">
+        <div className="setting-text">
+          <span id="setting-prompt-label">System prompt</span>
+          <span className="setting-description">
+            {error ?? (presets ? "Swapping applies to every chat from its next reply" : "Waiting for the agent…")}
+          </span>
+        </div>
+        <button type="button" className="pill" onClick={onEdit}>
+          Edit prompts
+        </button>
+      </div>
+      {presets && (
+        <div className="segmented prompt-slots" role="radiogroup" aria-labelledby="setting-prompt-label">
+          {presets.slots.map((slot, index) => (
+            <label key={index} title={slot.text ? undefined : "Empty; write a prompt in it under Edit prompts"}>
+              <input
+                type="radio"
+                name="setting-prompt"
+                checked={presets.active === index}
+                disabled={!slot.text}
+                onChange={() => prompts.use(index)}
+              />
+              <span>
+                <b>{index + 1}</b> {slotLabel(slot, index)}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Draws a row for every setting in definitions.ts, so new settings show up here without touching this file */
-function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function SettingsModal({
+  open,
+  onClose,
+  onEditPrompts,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onEditPrompts: () => void;
+}) {
   const values = useSettings();
   const dialog = useRef<HTMLDialogElement>(null);
 
@@ -114,6 +165,11 @@ function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }
           </section>
         ))}
 
+        <section className="settings-section">
+          <h3>Agent</h3>
+          <PromptSetting onEdit={onEditPrompts} />
+        </section>
+
         {remote && (
           <section className="settings-section">
             <h3>Account</h3>
@@ -143,6 +199,7 @@ function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }
 /** The gear in the window's bottom-left corner and the modal it opens; ⌘, opens it too */
 export function Settings() {
   const [open, setOpen] = useState(false);
+  const [editingPrompts, setEditingPrompts] = useState(false);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -169,7 +226,10 @@ export function Settings() {
           <circle cx="8" cy="8" r="2.1" />
         </svg>
       </button>
-      <SettingsModal open={open} onClose={() => setOpen(false)} />
+      <SettingsModal open={open} onClose={() => setOpen(false)} onEditPrompts={() => setEditingPrompts(true)} />
+      {/* Beside the settings rather than inside them, so its events don't reach the settings dialog's handlers; it
+          opens over them, and closing it goes back to them */}
+      <PromptEditor open={editingPrompts} onClose={() => setEditingPrompts(false)} />
     </>
   );
 }
