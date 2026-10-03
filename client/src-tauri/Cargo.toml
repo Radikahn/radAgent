@@ -27,6 +27,13 @@ serde_json = "1"
 # The Keychain on macOS and iOS, for the sign-in's refresh token
 keyring = { version = "3", features = ["apple-native"] }
 
+# UIKit's keyboard notifications, to slide only the composer up on iOS (src/keyboard.rs); the versions Tauri uses
+[target.'cfg(target_os = "ios")'.dependencies]
+objc2 = "0.6"
+block2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "block2", "NSDictionary", "NSNotification", "NSOperation", "NSString", "NSValue"] }
+objc2-ui-kit = { version = "0.3", default-features = false, features = ["std", "objc2-core-foundation", "UIGeometry", "UIResponder", "UIView", "UIWindow"] }
+
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

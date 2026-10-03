@@ -4,6 +4,9 @@
 
 // Saving exports (a /research report as text) to Downloads; keep `export_save` registered below when changing this file
 mod export;
+// The keyboard slides over the chat on iOS instead of pushing the whole app up
+#[cfg(target_os = "ios")]
+mod keyboard;
 
 /// Keychain service the app's secrets are filed under
 const KEYCHAIN_SERVICE: &str = "com.radman.radagent";
@@ -47,6 +50,13 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         // Catches Google's redirect after Connect Google in Settings; scripts/install-*.sh register its scheme
         .plugin(tauri_plugin_deep_link::init())
+        .setup(|_app| {
+            #[cfg(target_os = "ios")]
+            if let Some(window) = tauri::Manager::get_webview_window(_app, "main") {
+                keyboard::install(&window)?;
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![secret_get, secret_set, secret_delete, export::export_save])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
