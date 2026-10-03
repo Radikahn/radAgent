@@ -81,6 +81,25 @@ class VideosCard(TypedDict):
     videos: list[Video]
 
 
+class SpotifyItem(TypedDict):
+    uri: str                    # e.g. "spotify:track:4iV5W9uYEdYUVa79Axb7Rh"
+    url: str | None             # https://open.spotify.com/<kind>/<id>; None for local files in a playlist
+    kind: str                   # "track", "album", "artist", "playlist", "show", "episode", "audiobook", "chapter"
+    title: str
+    subtitle: str | None        # e.g. "Daft Punk · Discovery" or "Playlist · by Radman"
+    detail: str | None          # Short and right-aligned, e.g. "3:44" or "12 songs"
+    image: str | None           # Cover art on Spotify's CDN (*.scdn.co, *.spotifycdn.com)
+    playing: bool               # The item playing right now
+
+
+class SpotifyCard(TypedDict):
+    card: Literal["spotify"]
+    version: Literal[1]
+    title: str                  # What the list is, e.g. "8 results" or "Playing on MacBook"
+    subtitle: str | None        # e.g. the search query, or "20 of 1,204"
+    items: list[SpotifyItem]
+
+
 
 def is_card(data: Any) -> bool:
     """True when something a tool yielded is a card for the client rather than progress or its result"""

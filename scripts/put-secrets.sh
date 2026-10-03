@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Store the agent's secrets in Secrets Manager as one JSON object:
-#   EXA_API_KEY    from the environment, else agent/.env (left out when unset)
+#   EXA_API_KEY, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN
+#                  from the environment, else agent/.env (each left out when unset)
 #   SECRET_PROMPT  contents of the file at SECRET_PROMPT_PATH (environment, else agent/.env; left out when unset)
 # Values are never printed; only the key names are.
 set -euo pipefail
@@ -37,7 +38,8 @@ tf_out() { terraform -chdir=infra output -raw "$1"; }
 region="$(tf_out region)"
 secret_id="$(tf_out secret_id)"
 
-exa_api_key="${EXA_API_KEY:-$(dotenv_get EXA_API_KEY)}"
+# Plain keys copied as they are; SPOTIFY_REFRESH_TOKEN comes from `uv run radagent --spotify-login`
+env_keys=(EXA_API_KEY SPOTIFY_CLIENT_ID SPOTIFY_CLIENT_SECRET SPOTIFY_REFRESH_TOKEN)
 
 # A relative SECRET_PROMPT_PATH is relative to where it was set: the caller's directory for the
 # environment, agent/ for agent/.env (the agent runs from agent/).
@@ -58,10 +60,14 @@ fi
 
 jq_args=(-n)
 filter='{}'
-if [[ -n "$exa_api_key" ]]; then
-  # Passed through the environment rather than --arg so it never shows up in argv.
-  filter+=' + {EXA_API_KEY: $ENV.EXA_API_KEY}'
-fi
+for key in "${env_keys[@]}"; do
+  value="${!key:-$(dotenv_get "$key")}"
+  if [[ -n "$value" ]]; then
+    # Passed to jq through the environment rather than --arg so it never shows up in argv.
+    export "$key=$value"
+    filter+=" + {${key}: \$ENV.${key}}"
+  fi
+done
 if [[ -n "$prompt_path" ]]; then
   jq_args+=(--rawfile secret_prompt "$prompt_path")
   filter+=' + {SECRET_PROMPT: $secret_prompt}'
@@ -72,11 +78,11 @@ tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
 chmod 600 "$tmp"
 
-EXA_API_KEY="$exa_api_key" jq "${jq_args[@]}" "$filter" > "$tmp"
+jq "${jq_args[@]}" "$filter" > "$tmp"
 
 keys="$(jq -r 'keys | if length == 0 then "(none)" else join(", ") end' "$tmp")"
 if [[ "$keys" == "(none)" ]]; then
-  echo "warning: neither EXA_API_KEY nor SECRET_PROMPT_PATH is set; storing an empty object" >&2
+  echo "warning: none of ${env_keys[*]} or SECRET_PROMPT_PATH is set; storing an empty object" >&2
 fi
 
 aws secretsmanager put-secret-value \
