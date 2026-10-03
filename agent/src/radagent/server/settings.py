@@ -9,25 +9,34 @@ import json
 import os
 import sys
 import tempfile
+from typing import Any
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
 
-def load_secrets() -> None:
-    """Put the agent's secret into the environment; does nothing without RADAGENT_SECRET_ID"""
+def read_secret() -> dict[str, Any] | None:
+    """The agent's secret as it is now; None without RADAGENT_SECRET_ID, or when it can't be read"""
     secret_id = os.getenv("RADAGENT_SECRET_ID")
     if not secret_id:
-        return
+        return None
     try:
         value = boto3.client("secretsmanager").get_secret_value(SecretId = secret_id)["SecretString"]
         settings = json.loads(value)
     except (BotoCoreError, ClientError, KeyError, ValueError) as e:
         # A secret without a value yet still leaves a working agent, just without its keys and its own prompt
         print(f"[radagent] couldn't load the secret {secret_id}: {type(e).__name__}: {e}", file = sys.stderr)
-        return
+        return None
     if not isinstance(settings, dict):
         print(f"[radagent] the secret {secret_id} isn't a JSON object; ignoring it", file = sys.stderr)
+        return None
+    return settings
+
+
+def load_secrets() -> None:
+    """Put the agent's secret into the environment; does nothing without RADAGENT_SECRET_ID"""
+    settings = read_secret()
+    if settings is None:
         return
 
     prompt = settings.pop("SECRET_PROMPT", None)
