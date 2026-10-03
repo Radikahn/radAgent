@@ -1,4 +1,4 @@
-# The agent's secrets (EXA_API_KEY, SECRET_PROMPT) as one JSON object.
+# The agent's secrets (EXA_API_KEY, the SPOTIFY_* keys, SECRET_PROMPT) as one JSON object.
 # No aws_secretsmanager_secret_version on purpose: scripts/put-secrets.sh sets the value out of band
 # so it never lands in Terraform state.
 

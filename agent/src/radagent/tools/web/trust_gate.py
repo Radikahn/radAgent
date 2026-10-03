@@ -23,6 +23,11 @@ _SEARCH_RESULT_URL = re.compile(r"(?m)^\d+\. .* — (https?://\S+)$")
 _FIXED_SOURCE_TOOLS: dict[str, str] = {
     "find_places": "https://www.openstreetmap.org",
     "search_youtube": "https://www.youtube.com",
+    # Playlist names and descriptions, podcast text and raw API replies are anyone's to write
+    **dict.fromkeys(
+        ("spotify_search", "spotify_library", "spotify_lookup", "spotify_now_playing", "spotify_api"),
+        "https://open.spotify.com",
+    ),
 }
 # Agent state key holding the taint; the session saves agent state, so a resumed chat stays gated
 TAINT_STATE_KEY: str = "untrusted_sources"

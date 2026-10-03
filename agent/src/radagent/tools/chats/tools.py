@@ -17,6 +17,7 @@ from typing import Any, NamedTuple
 from strands import ToolContext, tool
 
 from radagent.chats import ChatInfo, ChatStore, read_legacy_memories
+from radagent.coding import is_code_note
 from radagent.tools.web.trust_gate import TAINT_STATE_KEY
 
 
@@ -77,7 +78,9 @@ def conversation(messages: Iterable[dict[str, Any]]) -> list[tuple[str, str]]:
             continue
         text = "\n".join(
             block["text"] for block in content
-            if isinstance(block.get("text"), str) and not is_cross_chat_note(block["text"])
+            # Notes that slash commands send ahead of a message are for the model, not part of the conversation
+            if isinstance(block.get("text"), str)
+            and not is_cross_chat_note(block["text"]) and not is_code_note(block["text"])
         ).strip()
         if text:
             said.append((role, text))

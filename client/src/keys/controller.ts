@@ -3,6 +3,7 @@
 
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ChatSummary, Turn } from "../agent";
+import { copyText } from "../chat/clipboard";
 import type { Setting } from "../settings/schema";
 import { settings } from "../settings/store";
 import * as dom from "./dom";
@@ -420,7 +421,7 @@ export function createKeyboard(app: () => AppApi) {
     flash?.animate([{ backgroundColor: "color-mix(in srgb, currentColor 16%, transparent)" }], { duration: 650, easing: "ease-out" });
     const lines = text.split("\n").length;
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       message(lines > 1 ? `${lines} lines copied` : `Copied “${shorten(text)}”`);
     } catch {
       message("Kept for p (the system clipboard wasn't available)");
@@ -431,10 +432,12 @@ export function createKeyboard(app: () => AppApi) {
     const block = liveCursor("thread");
     if (!block) return message("Move to a block first (j, k)", true);
     const turn = block.matches(".prompt") ? turnOf(block) : undefined;
+    // A code block copies its code alone, as its copy button does (chat/CodeBlock.tsx)
+    const code = block.matches("pre, .code-block") ? block.querySelector("code") ?? block : null;
     const text = turn
       ? `${turn.command ? `/${turn.command} ` : ""}${turn.prompt}`
-      : block.matches("pre")
-        ? (block.textContent ?? "")
+      : code
+        ? (code.textContent ?? "").replace(/\n$/, "")
         : block.innerText.trim();
     yank(text, block);
   }

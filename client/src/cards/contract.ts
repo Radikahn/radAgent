@@ -67,7 +67,35 @@ export type VideosCard = {
   videos: Video[];
 };
 
-export type Card = PlacesCard | LinksCard | VideosCard;
+export type SpotifyItem = {
+  /** e.g. "spotify:track:4iV5W9uYEdYUVa79Axb7Rh" */
+  uri: string;
+  /** https://open.spotify.com/<kind>/<id>; null for local files in a playlist */
+  url: string | null;
+  /** "track", "album", "artist", "playlist", "show", "episode", "audiobook" or "chapter" */
+  kind: string;
+  title: string;
+  /** e.g. "Daft Punk · Discovery" or "Playlist · by Radman" */
+  subtitle: string | null;
+  /** Short and right-aligned, e.g. "3:44" or "12 songs" */
+  detail: string | null;
+  /** Cover art on Spotify's CDN (*.scdn.co, *.spotifycdn.com) */
+  image: string | null;
+  /** The item playing right now */
+  playing: boolean;
+};
+
+export type SpotifyCard = {
+  card: "spotify";
+  version: 1;
+  /** What the list is, e.g. "8 results" or "Playing on MacBook" */
+  title: string;
+  /** e.g. the search query, or "1–20 of 1,204" */
+  subtitle: string | null;
+  items: SpotifyItem[];
+};
+
+export type Card = PlacesCard | LinksCard | VideosCard | SpotifyCard;
 
 /** Cards arrive untyped over the bridge; anything with an unknown kind or version is ignored rather than guessed at */
 export function isPlacesCard(card: unknown): card is PlacesCard {
@@ -86,4 +114,10 @@ export function isVideosCard(card: unknown): card is VideosCard {
   if (typeof card !== "object" || card === null) return false;
   const value = card as Record<string, unknown>;
   return value.card === "videos" && value.version === 1 && Array.isArray(value.videos);
+}
+
+export function isSpotifyCard(card: unknown): card is SpotifyCard {
+  if (typeof card !== "object" || card === null) return false;
+  const value = card as Record<string, unknown>;
+  return value.card === "spotify" && value.version === 1 && Array.isArray(value.items);
 }
