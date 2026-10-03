@@ -7,3 +7,6 @@ terraform.tfvars
 backend.hcl
 
 # .terraform.lock.hcl is committed on purpose.
+
+# Saved plans (terraform plan -out=tfplan); they can hold secret values
+tfplan

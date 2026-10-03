@@ -13,7 +13,8 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /app
 
 # Dependencies first, so editing the agent doesn't reinstall them
-COPY pyproject.toml uv.lock .python-version ./
+# No .python-version: it isn't committed, and the base image's Python is the one to use
+COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 

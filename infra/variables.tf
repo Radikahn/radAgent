@@ -16,9 +16,20 @@ variable "project" {
 }
 
 variable "image_tag" {
-  description = "Tag of the agent image in ECR. The AgentCore runtime is only created when this is non-empty; scripts/deploy-agent.sh sets it."
+  description = "Tag of the agent image in ECR to create the AgentCore runtime with; there is no runtime while it is empty. Once the runtime exists, any deployed tag will do: deploys change the image (scripts/update-runtime.sh) and Terraform ignores it."
   type        = string
   default     = ""
+}
+
+variable "github_repository" {
+  description = "GitHub repository (owner/name) whose main branch deploys the agent with GitHub Actions; empty for no CI role."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.github_repository == "" || can(regex("^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$", var.github_repository))
+    error_message = "github_repository must look like owner/name."
+  }
 }
 
 variable "budget_email" {

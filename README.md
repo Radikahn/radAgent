@@ -37,7 +37,8 @@ cd client && bun install && bun tauri dev           # the app, with hot reload
 
 Deploying is in [infra/README.md](infra/README.md): Terraform, then `scripts/deploy-agent.sh` to build and push the
 agent's arm64 image and point the runtime at it, then `scripts/client-env.sh`, which writes the runtime's address
-into `client/.env.production`. Release builds use it and sign in with the Cognito user from
+into `client/.env.production`. After that, GitHub Actions checks every push to main and deploys the agent when
+`agent/` changed. Release builds use it and sign in with the Cognito user from
 `scripts/create-user.sh`; the sign-in lasts 90 days and is kept in the Keychain.
 
 - **Mac:** `scripts/install-mac.sh` builds the app, ad-hoc signed, and copies it into `/Applications`.

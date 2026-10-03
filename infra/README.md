@@ -37,12 +37,29 @@ scripts/client-env.sh                    # writes client/.env.production
 
 Confirm the budget's subscription email AWS sends to `budget_email`.
 
+## GitHub Actions
+
+`.github/workflows/main.yml` runs compile checks (the agent, the client's TypeScript and Rust, this Terraform) on
+every push to main and on pull requests into it. On main, it then deploys the agent if `agent/` differs from the
+commit the runtime is running: it builds the arm64 image, pushes it to ECR and points the runtime at it with
+`scripts/update-runtime.sh`. Running the workflow by hand (Actions > main > Run workflow) deploys regardless.
+
+It signs in to AWS with OIDC as a role that only the repository's main branch can assume, and that can only push
+to the ECR repo and update the runtime. Setting it up, once the runtime exists:
+
+```sh
+# github_repository = "<owner>/<name>" in infra/terraform.tfvars, then
+terraform -chdir=infra apply -var image_tag=<deployed tag>   # GitHub OIDC provider + the role
+scripts/ci-vars.sh                                         # Actions variables: region, role, ECR repo, runtime id
+```
+
 ## Later
 
-- New agent version: `scripts/deploy-agent.sh` (tags are immutable: `<git sha>-<timestamp>`).
-- Any other change: pass the deployed tag, or Terraform plans to remove the runtime (blocked by
-  `prevent_destroy`): `terraform -chdir=infra apply -var image_tag=<current tag>`, or just run
-  `scripts/deploy-agent.sh`, which forwards extra args to `terraform apply`.
+- New agent version: push to main. To deploy from your machine instead (whatever is checked out, uncommitted
+  changes included), `scripts/deploy-agent.sh`. Tags are immutable: `<git sha>-<timestamp>`.
+- Any other change: `terraform -chdir=infra apply` with `image_tag` set, or Terraform plans to remove the runtime
+  (blocked by `prevent_destroy`). Any deployed tag will do, since Terraform ignores the image once the runtime
+  exists, so it's simplest to put one in `terraform.tfvars`.
 - Rotating secrets: `scripts/put-secrets.sh` again. The value is never in Terraform state.
 
 ## Notes
