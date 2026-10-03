@@ -90,7 +90,8 @@ function useDockHeight() {
     const observer = new ResizeObserver(() =>
       document.documentElement.style.setProperty("--dock-height", `${element.offsetHeight}px`),
     );
-    observer.observe(element);
+    // The border box, since the gap under the input (padding) changes as the on-screen keyboard comes and goes
+    observer.observe(element, { box: "border-box" });
     return () => observer.disconnect();
   }, []);
   return dock;
@@ -98,6 +99,16 @@ function useDockHeight() {
 
 export default function App() {
   const agent = useAgent();
+  // The agent on AWS needs this device signed in first; a local agent never asks
+  if (agent.signedOut) return <SignIn />;
+  return <Workspace agent={agent} />;
+}
+
+/**
+ * The chat itself. Its own component so the hooks above attach to the thread and dock it draws: had they lived in
+ * App, signing in again would leave them watching the elements from before the sign-in screen
+ */
+function Workspace({ agent }: { agent: ReturnType<typeof useAgent> }) {
   const { status, chats, activeId, turns, loading, answering, notice, send, stop, restart } = agent;
   const { scroller, content, follow, jump } = useFollowBottom();
   const dock = useDockHeight();
@@ -135,9 +146,6 @@ export default function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
-
-  // The agent on AWS needs this device signed in first; a local agent never asks
-  if (agent.signedOut) return <SignIn />;
 
   return (
     <div className={`app ${sidebar.open ? "sidebar-open" : ""}`}>
