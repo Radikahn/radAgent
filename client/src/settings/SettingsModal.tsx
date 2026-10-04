@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { signOut } from "../remote/auth";
 import { remote } from "../remote/config";
+import { googleConfigured } from "../remote/google";
+import { GoogleSection } from "./GoogleSection";
 import type { ChoiceSetting, Setting, ToggleSetting, ValueOf } from "./schema";
 import { settings, type SettingKey } from "./store";
 import { useSettings } from "./useSettings";
@@ -113,6 +115,8 @@ function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }
             })}
           </section>
         ))}
+
+        {googleConfigured && <GoogleSection open={open} />}
 
         {remote && (
           <section className="settings-section">

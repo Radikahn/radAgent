@@ -13,9 +13,12 @@ if [[ ! -f client/.env.production ]]; then
   exit 1
 fi
 
+# Registers Google's redirect scheme when the app has a Google client (scripts/tauri-config.sh)
+config="$(scripts/tauri-config.sh)"
+
 cd client
 bun install --frozen-lockfile
-bun tauri build --target aarch64-apple-darwin --bundles app
+bun tauri build --target aarch64-apple-darwin --bundles app --config "$config"
 
 app="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/radAgent.app"
 if [[ -d /Applications/radAgent.app ]]; then

@@ -1,8 +1,8 @@
 # infra
 
 Terraform for running the agent on Amazon Bedrock AgentCore Runtime: chats bucket, ECR repo, Cognito
-user pool + app client, a Secrets Manager secret, the runtime's execution role, the runtime itself, and
-a monthly budget. One user (the owner). Region defaults to `us-west-2`.
+user pool + app client, Secrets Manager secrets (the agent's keys, and the Google login the agent writes itself),
+the runtime's execution role, the runtime itself, and a monthly budget. One user (the owner). Region defaults to `us-west-2`.
 
 ## Before you start
 
@@ -29,6 +29,9 @@ terraform -chdir=infra apply
 scripts/create-user.sh you@example.com   # Cognito user, prompts for the password
 scripts/put-secrets.sh                   # EXA_API_KEY, SPOTIFY_* + SECRET_PROMPT -> Secrets Manager
 scripts/migrate-chats.sh                 # agent/.agent/{chats,memory,profile} -> S3 (asks first)
+
+# Optional: google_client_id in infra/terraform.tfvars for Connect Google (agent/README.md#google); the agent
+# keeps the login in the radagent/google secret itself, so put-secrets.sh never needs it
 
 # 4. Build + push the image, then apply with image_tag (creates the runtime)
 scripts/deploy-agent.sh

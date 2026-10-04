@@ -121,6 +121,42 @@
 
 /* ---- Controls ---- */
 
+.setting-actions {
+  flex: none;
+  display: flex;
+  gap: 4px;
+}
+
+.setting-error {
+  color: var(--danger);
+}
+
+/* Google's redirect address, pasted when the app can't catch it itself (a development build on macOS) */
+.setting-paste {
+  align-items: flex-end;
+}
+
+.setting-paste .setting-text {
+  flex: 1;
+  gap: 6px;
+}
+
+.setting-paste input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--faint);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.setting-paste input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--text) 40%, transparent);
+  outline-offset: 1px;
+}
+
 .segmented {
   flex: none;
   display: flex;

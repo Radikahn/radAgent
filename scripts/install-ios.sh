@@ -58,10 +58,13 @@ export APPLE_DEVELOPMENT_TEAM="$team"
 # Tauri's Swift side doesn't build or link with Xcode 27 as is; scripts/ios-swift/swift says why
 export PATH="$PWD/scripts/ios-swift:$PATH"
 
+# Registers Google's redirect scheme when the app has a Google client (scripts/tauri-config.sh)
+config="$(scripts/tauri-config.sh)"
+
 cd client
 bun install --frozen-lockfile
 # Development signing, which is what a free team can do
-bun tauri ios build --export-method debugging
+bun tauri ios build --export-method debugging --config "$config"
 
 ipa="$(ls -t src-tauri/gen/apple/build/arm64/*.ipa | head -1)"
 xcrun devicectl device install app --device "$device" "$ipa"

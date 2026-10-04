@@ -1,13 +1,16 @@
 /**
  * Where the agent runs. A build made after `scripts/client-env.sh` (client/.env.production) talks to the runtime on
  * AWS and signs in with Cognito; a development build talks to `uv run radagent --serve --port 8787` on this machine
- * with no sign-in (client/.env.development). None of these values are secrets
+ * with no sign-in (client/.env.development, plus client/.env.development.local for VITE_GOOGLE_CLIENT_ID). None of
+ * these values are secrets
  */
 const env = import.meta.env;
 
 export const region: string = env.VITE_AWS_REGION ?? "";
 export const runtimeArn: string = env.VITE_RUNTIME_ARN ?? "";
 export const cognitoClientId: string = env.VITE_COGNITO_CLIENT_ID ?? "";
+/** The Google OAuth client (iOS type) the app connects Google with; see remote/google.ts */
+export const googleClientId: string = env.VITE_GOOGLE_CLIENT_ID ?? "";
 
 /** True when the agent is on AWS, behind Cognito */
 export const remote = Boolean(runtimeArn);

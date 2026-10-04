@@ -99,6 +99,12 @@ puts it into effect at startup and on every change. Read values anywhere with `s
 `settings.subscribe()`), or `useSettings()` in React; the store itself is plain TypeScript. Settings come in the
 kinds in `schema.ts` (`choice` and `toggle` so far); a new kind gets a control in `SettingsModal.tsx`.
 
+### Google
+
+Settings > Connections > Google connects the agent to your Google account, so it can find and read your Drive files,
+write and edit Google Docs, and read and change your calendar. Setting up the Google client it needs is in
+[agent/README.md](agent/README.md#google).
+
 ### Chats and memory
 
 Each chat is its own conversation with its own context and memory, kept in `agent/.agent/chats/<id>/`: the saved

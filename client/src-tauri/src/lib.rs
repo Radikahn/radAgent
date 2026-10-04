@@ -48,6 +48,8 @@ fn secret_delete(name: String) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        // Catches Google's redirect after Connect Google in Settings; scripts/install-*.sh register its scheme
+        .plugin(tauri_plugin_deep_link::init())
         .setup(|_app| {
             #[cfg(target_os = "ios")]
             if let Some(window) = tauri::Manager::get_webview_window(_app, "main") {
