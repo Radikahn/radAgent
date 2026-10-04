@@ -115,3 +115,17 @@ Start a message with `/memory` to let the agent look through your other chats fo
 `agent/.agent/memory`, the shared memory from before there were chats. If one of those chats read untrusted web
 content, pulling text out of it turns off shell, write and edit in the current chat, the same as reading that
 content directly would.
+
+### Profile
+
+Start a message with `/profile` to tell the agent something about you to keep for good, e.g. `/profile I'm a nurse
+in Toronto and I have a dog named Miso`. Unlike a chat's memory, which the agent fills on its own and only that chat
+recalls, the profile changes only when you use `/profile`, and every chat knows it: it's part of the system prompt.
+A model folds each message into a short Markdown profile of you (who you are, the people in your life, work,
+preferences, a dated history), so the same command corrects things (`/profile I moved to Lisbon`) or drops them
+(`/profile forget where I used to work`). On its own, `/profile` shows the whole profile.
+
+Each `/profile` message is also kept word for word, with its date, as the long-term record the profile is built from
+(`agent/src/radagent/profile.py`). It's in `agent/.agent/profile/`, or under `profile/` in the bucket on AWS:
+`entries/` holds the messages, one file each, and `profile.json` the profile built from them. A message is saved
+before the profile is rebuilt, so one that fails to go in is taken in with the next `/profile`.

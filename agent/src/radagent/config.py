@@ -6,6 +6,9 @@ MODEL: str = "global.anthropic.claude-sonnet-4-6"
 RESEARCH_MODEL: str | None = None
 RESEARCH_AGENT_MODEL: str | None = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
 
+# /profile folds what the user shares into their profile on PROFILE_MODEL; None uses the conversation's model
+PROFILE_MODEL: str | None = None
+
 # Domains whose web content may lead the agent to run shell commands or change files (subdomains included)
 # Reading anything outside this list disables shell, write and edit for the rest of the session
 # Only list sites where nobody else can publish, e.g. "docs.python.org"; not github.com or wikipedia.org
