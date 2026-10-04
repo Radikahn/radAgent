@@ -10,12 +10,20 @@ fi
 chmod 600 "$key"
 echo "entrypoint: host key $(ssh-keygen -l -f "$key.pub")" >&2
 
-if [ ! -s /etc/ssh/authorized_keys/agent ]; then
-	echo "entrypoint: no key at /etc/ssh/authorized_keys/agent; nobody can log in until one is mounted there" >&2
-fi
-
 # sshd's privilege separation directory; /run is a tmpfs when the root filesystem is read-only
 mkdir -p /run/sshd
 chmod 755 /run/sshd
+
+# sshd reads a root-owned copy of the mounted keys: a bind mount keeps its owner from the host (under Docker Compose on
+# Linux, the user who ran keygen.sh), and sshd refuses a keys file owned by anyone but root or the user logging in.
+# /run belongs to root, so the agent can't add keys of its own here either
+mkdir -p /run/authorized_keys
+chmod 755 /run/authorized_keys
+if [ -s /etc/ssh/authorized_keys/agent ]; then
+	cp /etc/ssh/authorized_keys/agent /run/authorized_keys/agent
+	chmod 644 /run/authorized_keys/agent
+else
+	echo "entrypoint: no key at /etc/ssh/authorized_keys/agent; nobody can log in until one is mounted there" >&2
+fi
 
 exec /usr/sbin/sshd -D -e -f /etc/ssh/sshd_config

@@ -1,5 +1,6 @@
 # The sandbox's sshd: public keys only, for the `agent` user only, with no forwarding of any kind. The agent's
-# key comes from a read-only mount at /etc/ssh/authorized_keys/agent, which the agent itself can't change
+# key comes from a read-only mount at /etc/ssh/authorized_keys/agent, which the entrypoint copies to a root-owned file
+# in /run; the agent itself can change neither
 
 Port 2222
 AddressFamily inet
@@ -11,7 +12,7 @@ PermitRootLogin no
 AuthenticationMethods publickey
 PubkeyAuthentication yes
 PubkeyAcceptedAlgorithms ssh-ed25519
-AuthorizedKeysFile /etc/ssh/authorized_keys/%u
+AuthorizedKeysFile /run/authorized_keys/%u
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 PermitEmptyPasswords no
