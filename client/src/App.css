@@ -14,6 +14,8 @@
   --faint: light-dark(rgba(29, 29, 31, 0.06), rgba(255, 255, 255, 0.06));
   --code-bg: light-dark(rgba(29, 29, 31, 0.045), rgba(255, 255, 255, 0.05));
   --danger: light-dark(#c4403b, #ff8a80);
+  /* Cornflower blue, the light that circles the composer while the agent answers */
+  --glow: #6495ed;
   --radius: 16px;
 
   /* Glass: barely tinted, so what passes underneath stays visible, just softened */
@@ -674,6 +676,76 @@ button {
   box-shadow: var(--glass-shadow), inset 0 0 0 1px color-mix(in srgb, var(--text) 16%, transparent);
 }
 
+/* While the agent answers, a light runs clockwise around the composer's border (Composer.tsx). It rides a motion path
+   rather than a turning conic gradient, which on a pill this wide would crawl along the middle and race round the
+   ends */
+.composer-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+
+.composer.busy .composer-glow {
+  opacity: 1;
+}
+
+/* The border, cut out of a box the composer's shape: the light inside shows only where it crosses the ring */
+.composer-glow-ring {
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: inherit;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Faintly tinted all the way round */
+.composer-glow > .composer-glow-ring {
+  background: color-mix(in srgb, var(--glow) 15%, transparent);
+}
+
+/* The halo: a thicker ring, blurred, so the light spills off the border and follows it round the corners. A blur
+   rather than a drop shadow, which WebKit leaves off the light once it animates on its own layer */
+.composer-glow-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  filter: blur(8px);
+}
+
+.composer-glow-halo > .composer-glow-ring {
+  padding: 6px;
+}
+
+/* The light: a soft spot whose middle follows the composer's outline. An inset() path starts at the top left and runs
+   clockwise; the radius matches .composer's */
+.composer-glow-ring::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 220px;
+  height: 64px;
+  background: radial-gradient(closest-side, var(--glow) 25%, color-mix(in srgb, var(--glow) 60%, transparent) 60%, transparent);
+  offset-path: inset(0 round 26px);
+  animation: around 3.6s linear infinite paused;
+}
+
+.composer.busy .composer-glow-ring::before {
+  animation-play-state: running;
+}
+
+@keyframes around {
+  to {
+    offset-distance: 100%;
+  }
+}
+
 .composer textarea {
   flex: 1;
   min-width: 0;
@@ -947,5 +1019,8 @@ button {
   .shimmer,
   .pulse {
     animation-duration: 6s;
+  }
+  .composer-glow-ring::before {
+    animation-duration: 12s;
   }
 }

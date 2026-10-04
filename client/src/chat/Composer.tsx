@@ -95,12 +95,19 @@ export function Composer({ status, busy, loading, chatId, onSend, onStop }: Prop
       {/* Outside the form: its backdrop filter would otherwise confine the fixed overlay to the input */}
       {attach.dragging && <div className="drop-zone">Drop files to attach</div>}
       <form
-        className="composer glass"
+        className={`composer glass ${busy ? "busy" : ""}`}
         onSubmit={(event) => {
           event.preventDefault();
           submit();
         }}
       >
+        {/* The light that circles the border while the agent answers; always there, so it can fade out where it stopped */}
+        <span className="composer-glow" aria-hidden="true">
+          <span className="composer-glow-ring" />
+          <span className="composer-glow-halo">
+            <span className="composer-glow-ring" />
+          </span>
+        </span>
         <CommandMenu suggestions={suggestions} active={message.command} onPick={pick} />
         {attach.files.length > 0 && <Attachments className="composer-tray" files={attach.files} onRemove={attach.remove} />}
         {attach.problem && (
