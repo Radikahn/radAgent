@@ -46,7 +46,10 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
     RADAGENT_S3_BUCKET = aws_s3_bucket.chats.bucket
     RADAGENT_S3_PREFIX = "chats"
     RADAGENT_SECRET_ID = aws_secretsmanager_secret.agent.arn
-    NO_COLOR           = "1"
+    # The Google login the agent keeps, and the only client it accepts one from (any, when empty)
+    RADAGENT_GOOGLE_SECRET_ID = aws_secretsmanager_secret.google.arn
+    GOOGLE_CLIENT_ID          = var.google_client_id
+    NO_COLOR                  = "1"
   }
 
   # The service validates the role (and pulls the image) on create, so its permissions go first.

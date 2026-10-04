@@ -194,6 +194,13 @@ data "aws_iam_policy_document" "runtime" {
     actions   = ["secretsmanager:GetSecretValue"]
     resources = [aws_secretsmanager_secret.agent.arn]
   }
+
+  statement {
+    sid       = "GoogleLogin"
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue"]
+    resources = [aws_secretsmanager_secret.google.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "runtime" {

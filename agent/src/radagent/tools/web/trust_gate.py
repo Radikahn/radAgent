@@ -21,6 +21,8 @@ _LOCAL_PATH_INPUTS: dict[str, str] = {
 }
 _PROTECTED_ROOTS: tuple[str, ...] = ("/proc", "/sys", "/etc", "/root", "/var/run/secrets", "/run/secrets")
 _PROTECTED_NAMES: frozenset[str] = frozenset({".env", ".aws", ".ssh", ".netrc", ".git-credentials", ".docker"})
+# Credential files the agent keeps itself, relative to where it runs: the Google login (radagent.tools.google.account)
+_PROTECTED_FILES: tuple[str, ...] = (".agent/google.json",)
 
 # read_page opens its output with the URL the text really came from; web_search lists "N. Title — URL"
 _PAGE_SOURCE = re.compile(r"\ASource: (\S+)")
@@ -34,9 +36,15 @@ _FIXED_SOURCE_TOOLS: dict[str, str] = {
         ("spotify_search", "spotify_library", "spotify_lookup", "spotify_now_playing", "spotify_api"),
         "https://open.spotify.com",
     ),
+    # Files shared with the user, comments, calendar invites and raw API replies can come from anyone
+    **dict.fromkeys(("google_drive_search", "google_drive_read", "google_api"), "https://drive.google.com"),
+    "google_calendar_events": "https://calendar.google.com",
 }
 # Agent state key holding the taint; the session saves agent state, so a resumed chat stays gated
 TAINT_STATE_KEY: str = "untrusted_sources"
+# Invocation state key the gate puts the taint under before every tool call, for tools that hold back some of what
+# they do in a tainted conversation (the google tools); sorted source names, empty when the conversation is clean
+INVOCATION_TAINT_KEY: str = "untrusted_sources"
 
 
 
@@ -121,6 +129,7 @@ class TrustGate(HookProvider):
 
     def _gate(self, event: BeforeToolCallEvent) -> None:
         self._sync(event.agent)
+        event.invocation_state[INVOCATION_TAINT_KEY] = sorted(self.untrusted_sources)
         name = event.tool_use["name"]
         key = _LOCAL_PATH_INPUTS.get(name)
         if key and (problem := _protected(event.tool_use.get("input"), key)):
@@ -153,5 +162,7 @@ def protected_path(path: str) -> str | None:
         return resolved
     parts = resolved.split("/")
     if any(part in _PROTECTED_NAMES or part.startswith(".env.") for part in parts):
+        return resolved
+    if any(resolved == os.path.realpath(file) for file in _PROTECTED_FILES):
         return resolved
     return None

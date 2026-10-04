@@ -18,8 +18,9 @@ from typing import Any
 from bedrock_agentcore.runtime import BedrockAgentCoreApp, PingStatus
 from starlette.websockets import WebSocket
 
-from radagent.agent import RadAgent
+from radagent.agent import SYSTEM_PROMPT, RadAgent
 from radagent.chats import ChatStore
+from radagent.prompts.presets import PromptStore
 from radagent.server.core import SHUTDOWN_TIMEOUT_S, Chats, Hub, silent
 from radagent.server.ws import serve
 
@@ -29,22 +30,23 @@ def create_app(model: str | None = None, system_prompt: str | None = None) -> Be
     """
     Args:
         model: {str | None} Override the default model defined in `config.py`
-        system_prompt: {str | None} Override the default system prompt
+        system_prompt: {str | None} Override the default system prompt; it seeds the first prompt preset when there
+                       are none yet, and the presets decide from then on (radagent.prompts.presets)
     """
     store = ChatStore()
+    prompts = PromptStore(seed = SYSTEM_PROMPT if system_prompt is None else system_prompt)
     chats: Chats | None = None
 
     def new_agent(chat_id: str) -> RadAgent:
-        kwargs: dict[str, Any] = {"model": model, "callback_handler": silent, "chat_id": chat_id, "chats": store}
-        if system_prompt is not None:
-            kwargs["system_prompt"] = system_prompt
-        return RadAgent(**kwargs)
+        return RadAgent(
+            model = model, system_prompt = prompts.active(), callback_handler = silent, chat_id = chat_id, chats = store
+        )
 
     @asynccontextmanager
     async def lifespan(_: Any) -> AsyncIterator[None]:
         # The chats need the server's event loop, which only exists once it starts
         nonlocal chats
-        chats = Chats(Hub(asyncio.get_running_loop()), store, new_agent)
+        chats = Chats(Hub(asyncio.get_running_loop()), store, new_agent, prompts)
         yield
         try:
             await asyncio.wait_for(chats.close(), SHUTDOWN_TIMEOUT_S)
@@ -80,7 +82,7 @@ def run_server(model: str | None = None, system_prompt: str | None = None, host:
 
     Args:
         model: {str | None} Override the default model defined in `config.py`
-        system_prompt: {str | None} Override the default system prompt
+        system_prompt: {str | None} Override the default system prompt; see create_app
         host: {str | None} Where to listen; None is 127.0.0.1, or 0.0.0.0 inside a container
         port: {int}
     """

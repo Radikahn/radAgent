@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useReducer } from "react";
 import { encode, type Attachment, type PendingFile } from "./chat/files";
 import { reduceCommand, replayCommand } from "./chat/CommandPart";
 import { connection, type ConnectionEvent } from "./remote/connection";
+import type { GoogleStatus } from "./remote/google";
+import type { PromptEvent } from "./settings/prompts";
 
 /** A chat as the sidebar lists it; chats live in agent/.agent/chats, see agent/src/radagent/chats.py */
 export type ChatSummary = { id: string; title: string; created_at: string; updated_at: string };
@@ -12,6 +14,8 @@ export type ChatSummary = { id: string; title: string; created_at: string; updat
  */
 export type AgentEvent =
   | ConnectionEvent
+  /** The prompt presets, which settings/prompts.ts keeps */
+  | PromptEvent
   | { type: "ready" }
   | { type: "chats"; chats: ChatSummary[] }
   /** `running`: a turn is still being answered, so the last saved turn isn't finished */
@@ -25,7 +29,9 @@ export type AgentEvent =
   | { type: "tool_end"; chat: string; turn: string; id: string; status: "success" | "error" }
   | { type: "card"; chat: string; turn: string; id: string; card: unknown }
   | { type: "command_event"; chat: string; turn: string; command: string; event: unknown }
-  | { type: "turn_end"; chat: string; turn: string; stop_reason: string };
+  | { type: "turn_end"; chat: string; turn: string; stop_reason: string }
+  /** Whether the agent has a Google login; remote/google.ts keeps track of it for Settings */
+  | ({ type: "google" } & GoogleStatus);
 
 /** One piece of a reply, kept in the order it streamed in */
 export type Part =
@@ -198,8 +204,13 @@ function applyEvent(state: State, event: AgentEvent, at: number): State {
       return { ...state, status: "starting", notice: event.message, threads: markStale(state.threads) };
     case "signed-out":
       return { ...state, status: "signed-out", notice: undefined };
+    case "google":
+      return state;
     case "chats":
       return { ...state, chats: event.chats };
+    case "prompts":
+    case "prompt_error":
+      return state;
     case "history":
       // A chat already on hand is at least as current as what's saved, e.g. a reply still streaming, unless it missed
       // events while offline

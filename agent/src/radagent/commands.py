@@ -15,7 +15,8 @@ from strands.hooks import MessageAddedEvent
 from strands.types.content import Message
 
 from radagent.agent import RadAgent
-from radagent.config import RESEARCH_AGENT_MODEL, RESEARCH_MODEL
+from radagent.config import PROFILE_MODEL, RESEARCH_AGENT_MODEL, RESEARCH_MODEL
+from radagent.profile import profile_store
 from radagent.tools.research import for_replay, run_research
 
 
@@ -39,7 +40,9 @@ class Command:
     # Runs the command and returns the Markdown reply recorded in the conversation
     run: Callable[[CommandRun], Coroutine[Any, Any, str]]
     # Trims a run's timed events to what a saved chat keeps to show it again
-    keep: Callable[[list[tuple[float, Any]]], list[dict[str, Any]]]
+    keep: Callable[[list[tuple[float, Any]]], list[dict[str, Any]]] = lambda timeline: []
+    # The command emits no events of its own; its reply streams to the client the way the agent's text does
+    reply_as_text: bool = False
 
 
 
@@ -95,6 +98,36 @@ async def _research(run: CommandRun) -> str:
     return reply
 
 
+async def _profile(run: CommandRun) -> str:
+    note = run.arguments
+    store = profile_store()
+    if not note:
+        # On its own, /profile shows what's on it
+        markdown = await asyncio.to_thread(store.current)
+        reply = (
+            f"{markdown}\n\n*Every chat knows this. Add to it or correct it with /profile.*" if markdown
+            else "Your profile is empty. Start a message with /profile to add to it, e.g. `/profile I'm a nurse in "
+                 "Toronto and I have a dog named Miso`. Every chat knows what's on it."
+        )
+        await remember(run.agent, "/profile", reply, turn_id = run.turn_id)
+        return reply
+
+    prompt = f"/profile {note}"
+    try:
+        summary, _ = await store.add(note, model = PROFILE_MODEL or run.agent.model, chat = run.agent.chat_id)
+    except asyncio.CancelledError:
+        await remember(run.agent, prompt, "Stopped before the profile took this in; the note is kept and goes in "
+                                          "with the next /profile.", turn_id = run.turn_id)
+        raise
+    except Exception as e:
+        await remember(run.agent, prompt, f"Adding that to the profile failed: {e}", turn_id = run.turn_id)
+        raise
+
+    reply = f"{summary}\n\n*Every chat knows this now. Send /profile on its own to see your whole profile.*"
+    await remember(run.agent, prompt, reply, turn_id = run.turn_id)
+    return reply
+
+
 COMMANDS: dict[str, Command] = {
     command.name: command
     for command in (
@@ -104,6 +137,13 @@ COMMANDS: dict[str, Command] = {
             description = "Send a crew of agents across the web and get back a cited report",
             run = _research,
             keep = for_replay,
+        ),
+        Command(
+            name = "profile",
+            usage = "[something about you]",
+            description = "Add to the profile every chat knows you by; on its own, show it",
+            run = _profile,
+            reply_as_text = True,
         ),
     )
 }

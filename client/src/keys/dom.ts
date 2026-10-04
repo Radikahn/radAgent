@@ -83,8 +83,10 @@ export function isEditable(element: Element | null): boolean {
 export const isVimUi = (element: Element | null) => !!element?.closest(VIM_UI);
 
 /** The app's open modal dialog (e.g. settings); the keyboard layer's own help sheet doesn't count */
+/** The topmost open dialog: one opened from another (the prompt editor over the settings) comes later in the page */
 export function openDialog(): HTMLDialogElement | null {
-  return document.querySelector<HTMLDialogElement>(`dialog[open]:not(${VIM_UI})`);
+  const open = document.querySelectorAll<HTMLDialogElement>(`dialog[open]:not(${VIM_UI})`);
+  return open[open.length - 1] ?? null;
 }
 
 export function paneOf(element: Element | null): Pane | null {

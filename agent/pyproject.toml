@@ -16,6 +16,7 @@ dependencies = [
     "pypdf>=6.19.0",
     "python-dotenv>=1.2.4",
     "strands-harness>=0.1.2",
+    "tzdata>=2026.5",
 ]
 
 [project.scripts]

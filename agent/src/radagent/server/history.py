@@ -4,10 +4,12 @@ Rebuilds a saved chat as the turns the client renders, so a reopened chat looks 
 Keep the shapes in step with `Turn` and `Part` in `client/src/agent.ts`. The saved conversation has no timings,
 so thinking and tool parts carry 0 for both ends and the client shows them without durations
 """
+import re
 from collections.abc import Callable
 from typing import Any
 
 from radagent.coding import is_code_note
+from radagent.commands import COMMANDS
 from radagent.media import split_attachments
 from radagent.tools.chats import is_cross_chat_note
 
@@ -15,6 +17,8 @@ from radagent.tools.chats import is_cross_chat_note
 DETAIL_CHARS: int = 120
 # The notes sent ahead of a message started with these commands; the turn shows the command in their place
 NOTES: dict[str, Callable[[str], bool]] = {"memory": is_cross_chat_note, "code": is_code_note}
+# A slash command's name at the start of a prompt the command recorded, e.g. "/profile I have a dog"
+_COMMAND = re.compile(r"/(\w+)(?=\s|$)")
 
 
 
@@ -90,6 +94,10 @@ def to_turns(messages: list[dict[str, Any]], cards: dict[str, Any]) -> list[dict
                 turn["prompt"] = turn["prompt"].removeprefix(f"/{name}").strip()
                 turn["parts"] = [{"kind": "command", "command": name, "events": replay["events"]}]
                 replayed.add(len(turns))
+            # A command with no saved events, like /profile, recorded its prompt as typed; show the command as sent
+            elif "command" not in turn and (typed := _COMMAND.match(turn["prompt"])) and typed[1] in COMMANDS:
+                turn["command"] = typed[1]
+                turn["prompt"] = turn["prompt"][typed.end():].strip()
             turns.append(turn)
             continue
 
