@@ -63,7 +63,8 @@ export function Composer({ status, busy, loading, chatId, onSend, onStop }: Prop
   const attach = useAttachments();
   const message = parseCommand(text);
   const suggestions = suggestCommands(text);
-  const canSend = (message.text !== "" || attach.files.length > 0) && !busy && !loading && status !== "stopped";
+  const canSend =
+    (message.text !== "" || attach.files.length > 0 || !!message.command?.bare) && !busy && !loading && status !== "stopped";
   const returnSends = !touch.matches;
 
   // Not on a touchscreen, where taking focus would bring the keyboard up over the chat just opened

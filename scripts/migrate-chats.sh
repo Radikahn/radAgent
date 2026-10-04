@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time copy of the local chats and memory (agent/.agent) into the chats bucket.
+# One-time copy of the local chats, memory and profile (agent/.agent) into the chats bucket.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -9,7 +9,7 @@ region="$(tf_out region)"
 bucket="$(tf_out bucket)"
 
 # local dir -> bucket prefix
-sources=("agent/.agent/chats:chats" "agent/.agent/memory:memory")
+sources=("agent/.agent/chats:chats" "agent/.agent/memory:memory" "agent/.agent/profile:profile")
 
 echo "This will copy local files into s3://${bucket} (existing objects with the same key are overwritten):"
 planned=()

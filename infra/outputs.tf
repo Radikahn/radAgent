@@ -33,6 +33,11 @@ output "secret_id" {
   value       = aws_secretsmanager_secret.agent.name
 }
 
+output "google_client_id" {
+  description = "Google OAuth client the app connects Google with; empty when Google is left out."
+  value       = var.google_client_id
+}
+
 output "secret_arn" {
   description = "ARN of the agent's Secrets Manager secret."
   value       = aws_secretsmanager_secret.agent.arn

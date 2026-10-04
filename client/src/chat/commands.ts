@@ -5,6 +5,8 @@ export type Command = {
   hint: string;
   /** Sent when the command is used on its own, with nothing after it */
   fallback?: string;
+  /** Can be sent on its own, with no text; the agent decides what that means */
+  bare?: boolean;
 };
 
 export const COMMANDS: Command[] = [
@@ -22,6 +24,12 @@ export const COMMANDS: Command[] = [
     // Runs agent/src/radagent/tools/research; its progress renders through chat/CommandPart.tsx
     name: "research",
     hint: "Send a crew of agents across the web and get back a cited report",
+  },
+  {
+    // Kept in your profile, which every chat knows (agent/src/radagent/profile.py); on its own it shows the profile
+    name: "profile",
+    hint: "Tell every chat something about you to remember; on its own, see what it knows",
+    bare: true,
   },
 ];
 

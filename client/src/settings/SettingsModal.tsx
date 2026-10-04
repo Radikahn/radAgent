@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { signOut } from "../remote/auth";
 import { remote } from "../remote/config";
+import { googleConfigured } from "../remote/google";
+import { GoogleSection } from "./GoogleSection";
 import { PromptEditor } from "./PromptEditor";
 import { prompts, slotLabel, usePrompts } from "./prompts";
 import type { ChoiceSetting, Setting, ToggleSetting, ValueOf } from "./schema";
@@ -169,6 +171,8 @@ function SettingsModal({
           <h3>Agent</h3>
           <PromptSetting onEdit={onEditPrompts} />
         </section>
+
+        {googleConfigured && <GoogleSection open={open} />}
 
         {remote && (
           <section className="settings-section">
