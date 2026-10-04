@@ -146,11 +146,26 @@ Note that orange-cloud DNS proxying alone doesn't help here: it only proxies HTT
    `listenAddress` stays `127.0.0.1`. Write `127.0.0.1` rather than `localhost`, which may resolve to IPv6 first,
    where Docker doesn't listen.
 
-3. **Put Access in front of it**, in the Cloudflare dashboard under Zero Trust:
+   NixOS 24.05 and older run cloudflared as a `cloudflared` user, which can't read the root-only credentials file.
+   Have systemd hand it a copy, as newer releases do:
+
+   ```nix
+   services.cloudflared.tunnels."<tunnel id>".credentialsFile =
+     "/run/credentials/cloudflared-tunnel-<tunnel id>.service/credentials.json";
+   systemd.services."cloudflared-tunnel-<tunnel id>".serviceConfig.LoadCredential =
+     [ "credentials.json:/var/lib/cloudflared/<tunnel id>.json" ];
+   ```
+
+3. **Put Access in front of it**, in the Cloudflare dashboard under Zero Trust, before the tunnel connects:
    - Access > Service credentials > Service Tokens: create one, e.g. `radagent`, and copy its Client ID and Client
      Secret (the secret is shown once). Give it a duration you'll remember to renew, e.g. a year.
    - Access > Applications: add a **self-hosted** application for `sandbox.example.com`, with one policy whose action
      is **Service Auth** and which includes that service token. Nothing else gets through.
+
+   Check it: `curl -s -o /dev/null -w '%{http_code}\n' https://sandbox.example.com` prints 403 without the token. A
+   200, or a 1033 error page while the tunnel is down, means no application covers the hostname. Through the tunnel
+   every connection comes from this host, so the per-address rate limit doesn't apply, and Access is what keeps
+   strangers away from sshd.
 
 4. **Give the agent the settings**, in `agent/.env`:
 
@@ -163,7 +178,8 @@ Note that orange-cloud DNS proxying alone doesn't help here: it only proxies HTT
    ```
 
    Check it from the Mac first (`brew install cloudflared`, then the smoke test), then `scripts/put-secrets.sh`
-   copies them, the key file included, into the agent's secret on AWS. A running session picks them up within a
+   copies them, the key file included, into the agent's secret on AWS. It replaces the whole secret with what
+   `agent/.env` has, so first make sure `.env` holds every key the secret does now. A running session picks them up within a
    minute. The agent's image already has `cloudflared` (`agent/Dockerfile`).
 
 ### From AgentCore, straight to an open port
