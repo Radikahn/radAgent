@@ -64,3 +64,12 @@ chat. In such a chat the Google tools also hold back what such content could use
 changes (the way to share a file or delete one for good), and writing into files, folders or calendars someone else
 owns. Reading, and creating, editing and trashing your own things, keep working; Drive's trash, Calendar's trash and
 Docs' version history can undo those.
+
+## Sandbox
+
+The `sandbox_*` tools run commands, manage background jobs, edit files and move files to and from a container on your
+own server, over SSH with asyncssh (`src/radagent/tools/sandbox`). They read `SANDBOX_HOST`, `SANDBOX_PORT`,
+`SANDBOX_HOST_KEY`, `SANDBOX_SSH_KEY_PATH` (or `SANDBOX_SSH_KEY`) and, through a Cloudflare Tunnel,
+`SANDBOX_CF_ACCESS_CLIENT_ID` and `SANDBOX_CF_ACCESS_CLIENT_SECRET`; `../sandbox/keygen.sh` makes the key and prints
+the rest. Setting up the server is in [../sandbox/README.md](../sandbox/README.md). Like `shell`, the tools turn off for
+the rest of a chat once it reads untrusted web content.

@@ -11,6 +11,7 @@ runs on your machine instead.
 | `infra/`   | Terraform for AWS: AgentCore runtime, S3, Cognito, ECR, Secrets Manager; see [infra/README.md](infra/README.md) |
 | `scripts/` | Deploying the agent, setting up the user and secrets, installing the apps, smoke tests |
 | `server/`  | Docker Compose for Garage, a self-hosted S3, if you'd rather keep chats off AWS |
+| `sandbox/` | A container on your own server (NixOS module or Docker Compose) where the agent runs code over SSH |
 
 ## Agent
 
@@ -90,6 +91,14 @@ and a line or two on how to run them; it may run the code once in a temporary fo
 (`agent/src/radagent/coding.py` holds what it's asked). Every code block in a reply, `/code` or not, is a box with
 syntax highlighting and a Copy button that stays in view while a long file scrolls past; the box says "Writing"
 until its code has finished streaming (`client/src/chat/CodeBlock.tsx`).
+
+### Sandbox
+
+With a sandbox set up, the agent runs code on your own server instead of only writing it: it writes files there,
+runs and tests them, starts long jobs in the background and copies files back and forth (the `sandbox_*` tools). The
+sandbox is a locked-down Ubuntu container that the agent reaches over SSH, directly or through a Cloudflare Tunnel, and
+it can't reach the rest of your network. Setting it up on NixOS, connecting the agent and the security model are in
+[sandbox/README.md](sandbox/README.md).
 
 ### Settings
 

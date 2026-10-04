@@ -1,0 +1,47 @@
+# The sandbox's sshd: public keys only, for the `agent` user only, with no forwarding of any kind. The agent's
+# key comes from a read-only mount at /etc/ssh/authorized_keys/agent, which the agent itself can't change
+
+Port 2222
+AddressFamily inet
+HostKey /etc/ssh/host_keys/ssh_host_ed25519_key
+HostKeyAlgorithms ssh-ed25519
+
+AllowUsers agent
+PermitRootLogin no
+AuthenticationMethods publickey
+PubkeyAuthentication yes
+PubkeyAcceptedAlgorithms ssh-ed25519
+AuthorizedKeysFile /etc/ssh/authorized_keys/%u
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+UsePAM no
+
+# Modern algorithms only; the post-quantum key exchanges are used when the client offers them
+KexAlgorithms mlkem768x25519-sha256,sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
+
+# The sandbox is a place to run code, not a way into the rest of the network
+AllowTcpForwarding no
+AllowStreamLocalForwarding no
+AllowAgentForwarding no
+GatewayPorts no
+PermitTunnel no
+X11Forwarding no
+PermitUserEnvironment no
+PermitUserRC no
+
+# The agent keeps one connection and runs several commands at once over it
+MaxSessions 16
+MaxAuthTries 3
+MaxStartups 10:30:60
+LoginGraceTime 20
+ClientAliveInterval 30
+ClientAliveCountMax 4
+
+Subsystem sftp internal-sftp
+PrintMotd no
+PrintLastLog no
+# VERBOSE logs the fingerprint of the key behind every login
+LogLevel VERBOSE

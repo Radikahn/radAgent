@@ -8,11 +8,17 @@ from strands.hooks import AfterToolCallEvent, BeforeToolCallEvent, HookProvider,
 
 
 # Tools that act on the machine, or read from it, so they must not run once untrusted web content is in the
-# conversation: injected instructions could otherwise read a key and send it off with the next web request
-GATED_TOOLS: frozenset[str] = frozenset({"shell", "read", "write", "edit"})
-# File tools never touch these, tainted or not: process environments (keys, the runtime's AWS credentials), system
-# configuration and credential files
-_FILE_TOOLS: frozenset[str] = frozenset({"read", "write", "edit"})
+# conversation: injected instructions could otherwise read a key and send it off with the next web request. The
+# sandbox tools run code on the user's server and move files to and from it, so they're held to the same rule
+GATED_TOOLS: frozenset[str] = frozenset({
+    "shell", "read", "write", "edit",
+    "sandbox_run", "sandbox_jobs", "sandbox_write", "sandbox_read", "sandbox_edit", "sandbox_upload", "sandbox_download",
+})
+# Tools that read or write files on this machine, by the input that names the file. They never touch these, tainted
+# or not: process environments (keys, the runtime's AWS credentials), system configuration and credential files
+_LOCAL_PATH_INPUTS: dict[str, str] = {
+    "read": "path", "write": "path", "edit": "path", "sandbox_upload": "local_path", "sandbox_download": "local_path",
+}
 _PROTECTED_ROOTS: tuple[str, ...] = ("/proc", "/sys", "/etc", "/root", "/var/run/secrets", "/run/secrets")
 _PROTECTED_NAMES: frozenset[str] = frozenset({".env", ".aws", ".ssh", ".netrc", ".git-credentials", ".docker"})
 # Credential files the agent keeps itself, relative to where it runs: the Google login (radagent.tools.google.account)
@@ -44,7 +50,7 @@ INVOCATION_TAINT_KEY: str = "untrusted_sources"
 
 class TrustGate(HookProvider):
     """
-    Blocks shell, read, write and edit once the conversation holds web content from outside the trusted domains,
+    Blocks shell, read, write, edit and the sandbox tools once the conversation holds web content from outside the trusted domains,
     and keeps the file tools away from credentials and system files always
 
     Web pages and search snippets can carry prompt injection, so after the agent reads anything untrusted it
@@ -125,7 +131,8 @@ class TrustGate(HookProvider):
         self._sync(event.agent)
         event.invocation_state[INVOCATION_TAINT_KEY] = sorted(self.untrusted_sources)
         name = event.tool_use["name"]
-        if name in _FILE_TOOLS and (problem := _protected(event.tool_use.get("input"))):
+        key = _LOCAL_PATH_INPUTS.get(name)
+        if key and (problem := _protected(event.tool_use.get("input"), key)):
             event.cancel_tool = f"{name} can't be used on {problem}: it holds credentials or system configuration."
             return
         if name not in GATED_TOOLS or not self.untrusted_sources:
@@ -140,11 +147,16 @@ class TrustGate(HookProvider):
 
 
 
-def _protected(tool_input: object) -> str | None:
-    """The protected path a file tool's input names, or None"""
-    path = tool_input.get("path") if isinstance(tool_input, dict) else None
+def _protected(tool_input: object, key: str) -> str | None:
+    """The protected path a file tool's input names under `key`, or None"""
+    path = tool_input.get(key) if isinstance(tool_input, dict) else None
     if not isinstance(path, str) or not path:
         return None
+    return protected_path(path)
+
+
+def protected_path(path: str) -> str | None:
+    """`path` resolved, when it holds credentials or system configuration; None when the file tools may use it"""
     resolved = os.path.realpath(os.path.expanduser(path))
     if any(resolved == root or resolved.startswith(root + "/") for root in _PROTECTED_ROOTS):
         return resolved

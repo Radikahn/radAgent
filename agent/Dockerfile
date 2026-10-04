@@ -38,6 +38,15 @@ COPY --from=build /app/.venv /app/.venv
 RUN playwright install --with-deps --only-shell chromium \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
+# cloudflared, for reaching the sandbox through a Cloudflare Tunnel (sandbox/README.md), from Cloudflare's signed repository
+ADD https://pkg.cloudflare.com/cloudflare-main.gpg /usr/share/keyrings/cloudflare-main.gpg
+RUN chmod 644 /usr/share/keyrings/cloudflare-main.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main" \
+        > /etc/apt/sources.list.d/cloudflared.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends cloudflared \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
 # The agent's shell and file tools work in its own home, not in the app
 RUN useradd --create-home --shell /bin/bash agent
 USER agent
