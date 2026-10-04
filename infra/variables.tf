@@ -43,6 +43,17 @@ variable "github_oidc_subject_prefix" {
   }
 }
 
+variable "google_client_id" {
+  description = "Google OAuth client (iOS type, bundle ID com.radman.radagent) the app connects the user's Google account with, for the agent's Drive, Docs and Calendar tools; empty to leave Google out."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.google_client_id == "" || can(regex("^[A-Za-z0-9-]+\\.apps\\.googleusercontent\\.com$", var.google_client_id))
+    error_message = "google_client_id must look like <id>.apps.googleusercontent.com."
+  }
+}
+
 variable "budget_email" {
   description = "Email address that receives budget alerts."
   type        = string

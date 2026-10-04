@@ -1,0 +1,41 @@
+# The sandbox on any Docker host, e.g. to try it on a Mac; on NixOS use nixos.nix, which also keeps the container
+# off your network. Run ./keygen.sh first (it writes ./authorized_keys), then `docker compose up -d --build`
+
+name: radagent-sandbox
+
+services:
+  sandbox:
+    build: ./image
+    image: radagent-sandbox
+    restart: unless-stopped
+    hostname: radagent-sandbox
+    ports:
+      # SANDBOX_BIND is 127.0.0.1 by default; set it to the host's LAN or Tailscale address to reach it from elsewhere
+      - "${SANDBOX_BIND:-127.0.0.1}:${SANDBOX_PORT:-2222}:2222"
+    volumes:
+      - home:/home/agent
+      - host-keys:/etc/ssh/host_keys
+      - ./authorized_keys:/etc/ssh/authorized_keys/agent:ro
+    # The same limits as the NixOS module: only the home, /tmp and /run are writable, and sshd keeps just what it
+    # needs to log the agent in
+    read_only: true
+    tmpfs:
+      - /tmp:rw,exec,nosuid,size=2g
+      - /run:rw,noexec,nosuid,size=16m
+    cap_drop: [ALL]
+    cap_add: [SETUID, SETGID, SYS_CHROOT, CHOWN, KILL]
+    security_opt: [no-new-privileges]
+    dns: [1.1.1.1, 9.9.9.9]
+    cpus: ${SANDBOX_CPUS:-4}
+    mem_limit: ${SANDBOX_MEMORY:-8g}
+    memswap_limit: ${SANDBOX_MEMORY:-8g}
+    pids_limit: 1024
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/2222"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+
+volumes:
+  home:
+  host-keys:

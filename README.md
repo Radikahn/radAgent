@@ -11,6 +11,7 @@ runs on your machine instead.
 | `infra/`   | Terraform for AWS: AgentCore runtime, S3, Cognito, ECR, Secrets Manager; see [infra/README.md](infra/README.md) |
 | `scripts/` | Deploying the agent, setting up the user and secrets, installing the apps, smoke tests |
 | `server/`  | Docker Compose for Garage, a self-hosted S3, if you'd rather keep chats off AWS |
+| `sandbox/` | A container on your own server (NixOS module or Docker Compose) where the agent runs code over SSH |
 
 ## Agent
 
@@ -91,6 +92,14 @@ and a line or two on how to run them; it may run the code once in a temporary fo
 syntax highlighting and a Copy button that stays in view while a long file scrolls past; the box says "Writing"
 until its code has finished streaming (`client/src/chat/CodeBlock.tsx`).
 
+### Sandbox
+
+With a sandbox set up, the agent runs code on your own server instead of only writing it: it writes files there,
+runs and tests them, starts long jobs in the background and copies files back and forth (the `sandbox_*` tools). The
+sandbox is a locked-down Ubuntu container that the agent reaches over SSH, directly or through a Cloudflare Tunnel, and
+it can't reach the rest of your network. Setting it up on NixOS, connecting the agent and the security model are in
+[sandbox/README.md](sandbox/README.md).
+
 ### Settings
 
 The gear in the bottom-left corner opens the settings, which are listed in `client/src/settings/definitions.ts`.
@@ -98,6 +107,22 @@ Adding one is one entry there: the modal draws a row for it, its value is kept i
 puts it into effect at startup and on every change. Read values anywhere with `settings.get()` (and
 `settings.subscribe()`), or `useSettings()` in React; the store itself is plain TypeScript. Settings come in the
 kinds in `schema.ts` (`choice` and `toggle` so far); a new kind gets a control in `SettingsModal.tsx`.
+
+### Prompts
+
+The system prompt is kept with the chats, so every device shares it: in the bucket under `prompts/prompts.json`
+on AWS, or in `agent/.agent/prompts/` locally (`agent/src/radagent/prompts/presets.py`). It has three slots. The
+first time the agent starts, slot 1 gets the prompt it ran with before (the secret prompt, or
+`agent/src/radagent/prompts/system_prompt.txt`) and slots 2 and 3 start empty. Under Agent in the settings, tap a
+slot to switch every chat to it from its next reply; **Edit prompts** opens a menu where each slot's name and text
+can be changed (⌘S saves). After that the file is what counts, so changing the secret prompt no longer changes the
+agent's; delete `prompts/prompts.json` to start over from it.
+
+### Google
+
+Settings > Connections > Google connects the agent to your Google account, so it can find and read your Drive files,
+write and edit Google Docs, and read and change your calendar. Setting up the Google client it needs is in
+[agent/README.md](agent/README.md#google).
 
 ### Chats and memory
 
@@ -115,3 +140,17 @@ Start a message with `/memory` to let the agent look through your other chats fo
 `agent/.agent/memory`, the shared memory from before there were chats. If one of those chats read untrusted web
 content, pulling text out of it turns off shell, write and edit in the current chat, the same as reading that
 content directly would.
+
+### Profile
+
+Start a message with `/profile` to tell the agent something about you to keep for good, e.g. `/profile I'm a nurse
+in Toronto and I have a dog named Miso`. Unlike a chat's memory, which the agent fills on its own and only that chat
+recalls, the profile changes only when you use `/profile`, and every chat knows it: it's part of the system prompt.
+A model folds each message into a short Markdown profile of you (who you are, the people in your life, work,
+preferences, a dated history), so the same command corrects things (`/profile I moved to Lisbon`) or drops them
+(`/profile forget where I used to work`). On its own, `/profile` shows the whole profile.
+
+Each `/profile` message is also kept word for word, with its date, as the long-term record the profile is built from
+(`agent/src/radagent/profile.py`). It's in `agent/.agent/profile/`, or under `profile/` in the bucket on AWS:
+`entries/` holds the messages, one file each, and `profile.json` the profile built from them. A message is saved
+before the profile is rebuilt, so one that fails to go in is taken in with the next `/profile`.

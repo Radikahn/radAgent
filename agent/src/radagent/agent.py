@@ -9,6 +9,7 @@ from radagent.chats import ChatStore
 from radagent.coding import CODE_NOTE, is_code_note
 from radagent.config import MODEL, TRUSTED_DOMAINS
 from radagent.media import Attachment, MediaGuard, prompt_content
+from radagent.profile import profile_note, profile_store
 
 from radagent.prompts.lib.prompt import append_tools, initalize_agent
 from radagent.tools import TOOLS
@@ -135,6 +136,7 @@ class RadAgent:
         if not model: model = MODEL
         # Slash commands that run their own agents (e.g. /research) follow the conversation's model
         self.model: str = model
+        self.chat_id: str | None = chat_id
 
         # Only pass the handler when given, so Strands keeps its default printer otherwise
         agent_kwargs: dict[str, Any] = {}
@@ -180,12 +182,37 @@ class RadAgent:
             **agent_kwargs
         )
 
-        # The prompt ends on a list of every tool: ours, the harness built-ins and the ones its plugins vend, which are
-        # only known once it's built. Rebuilding the prompt from the instructions also replaces the one a reopened
-        # chat's session restored, so that chat gets the current prompt and tools rather than a second list
-        self.AGENT.system_prompt = build_system_prompt(
-            append_tools(system_prompt, self.AGENT.tool_registry.get_all_tools_config())
-        )
+        # Rebuilding the prompt from the instructions also replaces the one a reopened chat's session restored, so that
+        # chat gets the current prompt and tools rather than a second list
+        self.profile: str = profile_store().current()
+        self.use_prompt(system_prompt)
+
+
+    def use_prompt(self, system_prompt: str) -> None:
+        """
+        Run with a different system prompt from the next model call on, keeping the conversation
+
+        The prompt ends on a list of every tool: ours, the harness built-ins and the ones its plugins vend, which are
+        only known once it's built, then the user's /profile
+
+        Args:
+            system_prompt: {str} The instructions, as `system_prompt` takes them in __init__
+        """
+        self.instructions: str = append_tools(system_prompt, self.AGENT.tool_registry.get_all_tools_config())
+        self._set_profile(self.profile)
+
+
+    def _set_profile(self, markdown: str) -> None:
+        """Rebuild the system prompt with the user's /profile after the instructions; see radagent.profile"""
+        self.profile = markdown
+        note = profile_note(markdown)
+        self.AGENT.system_prompt = build_system_prompt(self.instructions, [note] if note else None)
+
+
+    def _refresh_profile(self) -> None:
+        """Pick up a /profile sent since this agent started, from this chat or another one"""
+        if (markdown := profile_store().markdown) != self.profile:
+            self._set_profile(markdown)
 
 
     def query(self, query: str, attachments: Sequence[Attachment] = (), code: bool = False, **kwargs) -> AgentResult:
@@ -211,6 +238,7 @@ class RadAgent:
 
         ##TODO: Handle kwargs
         prompt = _with_notes(prompt_content(query, list(attachments)), [CODE_NOTE] if code else [])
+        self._refresh_profile()
         response: AgentResult = self.AGENT(prompt = prompt)
 
         return response
@@ -245,6 +273,7 @@ class RadAgent:
         if code:
             notes.append(CODE_NOTE)
         prompt = _with_notes(prompt, notes)
+        self._refresh_profile()
         async for event in self.AGENT.stream_async(prompt, **kwargs):
             yield event
 

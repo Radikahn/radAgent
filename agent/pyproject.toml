@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "asyncssh>=2.21",
     "bedrock-agentcore>=1.24.0",
     "botocore[crt]>=1.43.107",
     "pillow>=12.3.0",
@@ -15,6 +16,7 @@ dependencies = [
     "pypdf>=6.19.0",
     "python-dotenv>=1.2.4",
     "strands-harness>=0.1.2",
+    "tzdata>=2026.5",
 ]
 
 [project.scripts]

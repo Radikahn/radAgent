@@ -1,3 +1,10 @@
+/* Typed, so it can transition: everything placed by the keyboard (the dock, the thread's fade) moves with it */
+@property --keyboard-inset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
 /* Design tokens; components (including client/src/cards) style themselves with these. Colors are
    light-dark(light, dark) pairs that follow color-scheme: the system's, unless the theme setting picks one */
 :root {
@@ -25,8 +32,13 @@
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  /* How much the on-screen keyboard covers; main.tsx keeps it, and it stays 0 on desktop */
+  /* How much the on-screen keyboard covers; main.tsx keeps it, and it stays 0 on desktop. On iOS it slides along with
+     the keyboard, over as long as the keyboard takes (main.tsx sets that too, and which way it's going) */
   --keyboard-inset: 0px;
+  --keyboard-duration: 0s;
+  --keyboard-ease: ease;
+  --keyboard-delay: 0s;
+  transition: --keyboard-inset var(--keyboard-duration) var(--keyboard-ease) var(--keyboard-delay);
   /* Below the composer: clear of the home indicator, or a plain gap once the keyboard has lifted the dock */
   --dock-gap: max(22px, env(safe-area-inset-bottom) + 8px - var(--keyboard-inset));
 
@@ -40,6 +52,18 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
+}
+
+/* Curves fitted to the iOS keyboard's own motion, measured frame by frame. The news of the keyboard reaches the page
+   a frame or two after it starts moving, so the dock skips ahead by that much */
+:root[data-keyboard="rising"] {
+  --keyboard-ease: cubic-bezier(0.3, 0.375, 0.075, 1);
+  --keyboard-delay: -16ms;
+}
+
+:root[data-keyboard="falling"] {
+  --keyboard-ease: cubic-bezier(0.275, 0.225, 0.25, 1);
+  --keyboard-delay: -33ms;
 }
 
 /* Set by the theme setting (client/src/settings/definitions.ts); absent means follow the system */
