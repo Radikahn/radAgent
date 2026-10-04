@@ -152,7 +152,9 @@ in
 
     subnet = lib.mkOption {
       type = lib.types.str;
-      default = "172.31.250.0/24";
+      # Outside Docker's own pools (172.17-172.31.0.0/16, then 192.168.0.0/16 in /20s), which a host with many
+      # Compose projects fills, and Docker refuses to create a network that overlaps one it already has
+      default = "10.250.250.0/24";
       description = "The container's Docker network; change it if it overlaps one you already use.";
     };
 

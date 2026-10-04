@@ -76,7 +76,7 @@ What the module sets up:
   capability dropped except the five sshd needs to log a user in, `no-new-privileges`, and CPU, memory and process
   limits. sshd accepts only the agent's Ed25519 key, only for `agent`, with no port, agent or X11 forwarding; the
   key's `authorized_keys` file is mounted read-only, so code in the sandbox can't add keys of its own.
-- **Its own network** (`172.31.250.0/24`, bridge `br-radagent`) with firewall rules: the container reaches the
+- **Its own network** (`10.250.250.0/24`, bridge `br-radagent`) with firewall rules: the container reaches the
   internet but not private ranges (your LAN, Tailscale's `100.64.0.0/10`, link-local), and not the server itself.
   New SSH connections are limited to 20 a minute per address.
 - **Its data** in `/var/lib/radagent-sandbox`: `home/` (the agent's home, owned by UID 2000) and `host-keys/`.
