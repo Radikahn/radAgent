@@ -3,7 +3,8 @@ Settings the agent takes from AWS when it runs there, loaded before anything rea
 
 The secret named by RADAGENT_SECRET_ID (see infra/secrets.tf, filled by scripts/put-secrets.sh) is a JSON object.
 SECRET_PROMPT is the system prompt that agent/.env points at with SECRET_PROMPT_PATH locally; every other key becomes
-an environment variable, e.g. EXA_API_KEY. Variables already set win, so a local run can override any of them
+an environment variable, e.g. EXA_API_KEY. Variables already set win, so a local run can override any of them. The
+served agent only uses the prompt to fill the first prompt preset when there are none yet (radagent.prompts.presets)
 """
 import json
 import os

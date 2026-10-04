@@ -182,16 +182,29 @@ class RadAgent:
             **agent_kwargs
         )
 
-        # The prompt ends on a list of every tool: ours, the harness built-ins and the ones its plugins vend, which are
-        # only known once it's built. Rebuilding the prompt from the instructions also replaces the one a reopened
-        # chat's session restored, so that chat gets the current prompt and tools rather than a second list
+        # Rebuilding the prompt from the instructions also replaces the one a reopened chat's session restored, so that
+        # chat gets the current prompt and tools rather than a second list
+        self.profile: str = profile_store().current()
+        self.use_prompt(system_prompt)
+
+
+    def use_prompt(self, system_prompt: str) -> None:
+        """
+        Run with a different system prompt from the next model call on, keeping the conversation
+
+        The prompt ends on a list of every tool: ours, the harness built-ins and the ones its plugins vend, which are
+        only known once it's built, then the user's /profile
+
+        Args:
+            system_prompt: {str} The instructions, as `system_prompt` takes them in __init__
+        """
         self.instructions: str = append_tools(system_prompt, self.AGENT.tool_registry.get_all_tools_config())
-        self._set_profile(profile_store().current())
+        self._set_profile(self.profile)
 
 
     def _set_profile(self, markdown: str) -> None:
         """Rebuild the system prompt with the user's /profile after the instructions; see radagent.profile"""
-        self.profile: str = markdown
+        self.profile = markdown
         note = profile_note(markdown)
         self.AGENT.system_prompt = build_system_prompt(self.instructions, [note] if note else None)
 

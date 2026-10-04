@@ -20,6 +20,7 @@ from radagent.cards import is_card
 from radagent.chats import ChatStore
 from radagent.commands import COMMANDS, Command, CommandRun
 from radagent.media import Attachment, MediaError
+from radagent.prompts.presets import PromptError, PromptStore
 from radagent.server import google
 from radagent.server.history import describe, to_turns
 from radagent.storage import StorageUnavailable
@@ -164,10 +165,11 @@ class Chats:
     user reads or writes elsewhere, or puts the phone away
     """
 
-    def __init__(self, hub: Hub, store: ChatStore, new_agent: Callable[[str], RadAgent]) -> None:
+    def __init__(self, hub: Hub, store: ChatStore, new_agent: Callable[[str], RadAgent], prompts: PromptStore) -> None:
         self.hub = hub
         self.store = store
         self.new_agent = new_agent
+        self.prompts = prompts
         self.agents: dict[str, RadAgent] = {}
         self.turns: dict[str, asyncio.Task[None]] = {}
         # Chats whose running turn is a slash command rather than the agent answering
@@ -194,6 +196,35 @@ class Chats:
             to.send("chats", chats = self.store.recent())
         except StorageUnavailable as e:
             to.send("error", message = str(e))
+
+
+    def send_prompts(self, to: Client | Hub | None = None) -> None:
+        """The prompt presets, to one client or, by default, to all of them"""
+        to = to or self.hub
+        try:
+            to.send("prompts", **self.prompts.get())
+        except StorageUnavailable as e:
+            to.send("prompt_error", message = str(e))
+
+
+    def change_prompt(self, client: Client, slot: Any, name: Any = None, text: Any = None) -> None:
+        """
+        Save a slot's prompt when `text` is given, otherwise switch to the slot. Every device gets the presets back,
+        and the loaded agents switch prompts from their next model call, a reply in progress included
+        """
+        try:
+            before = self.prompts.active()
+            if text is None:
+                self.prompts.use(slot)
+            else:
+                self.prompts.save(slot, str(name or ""), str(text))
+        except (PromptError, StorageUnavailable) as e:
+            client.send("prompt_error", message = str(e))
+            return
+        self.send_prompts()
+        if (prompt := self.prompts.active()) != before:
+            for agent in self.agents.values():
+                agent.use_prompt(prompt)
 
 
     def open(self, chat_id: str, client: Client) -> None:
@@ -423,6 +454,9 @@ def dispatch(chats: Chats, client: Client, command: Any) -> None:
          "profile" | None, "attachments"?: [{"name": str, "data": base64}]}
         {"type": "cancel", "chat": id}
         {"type": "delete", "chat": id}
+        {"type": "prompts"}                                 the prompt presets, as a `prompts` event
+        {"type": "save_prompt", "slot": 0-2, "name": str, "text": str}   replace a preset; "" empties it
+        {"type": "use_prompt", "slot": 0-2}                 run every chat with that preset's prompt
         {"type": "google_status" | "google_connect" | "google_disconnect", ...}   see radagent.server.google
     A chat that has never had a message has nothing saved; its first prompt creates it. "command": "memory" is
     /memory, which lets that one message look through the other chats, and "code" is /code, which asks for code
@@ -430,7 +464,9 @@ def dispatch(chats: Chats, client: Client, command: Any) -> None:
     runs that command on the text instead of the agent answering it, and may be sent without text. Attachments are
     images, PDFs, Office and text files; a prompt may carry them without text
 
-    Events out: ready, chats, history (to the client that opened the chat), error, google, and per turn turn_start, text,
+    Events out: ready, chats, history (to the client that opened the chat), error, google, prompts ({"active": slot,
+    "slots": [{"name", "text"}]}, to every client once one changes them), prompt_error (to the client whose prompt
+    command failed), and per turn turn_start, text,
     thinking, tool_start, tool_input, tool_end, card, command_event ({"command": name, "event": ...}, the command's
     own progress) and turn_end, each carrying the `chat` and `turn` it belongs to, to every client
     """
@@ -460,5 +496,11 @@ def dispatch(chats: Chats, client: Client, command: Any) -> None:
             chats.cancel(chat_id)
         case "delete":
             chats.delete(chat_id)
+        case "prompts":
+            chats.send_prompts(client)
+        case "save_prompt":
+            chats.change_prompt(client, command.get("slot"), command.get("name"), command.get("text") or "")
+        case "use_prompt":
+            chats.change_prompt(client, command.get("slot"))
         case other:
             client.send("error", message = f"Unknown command {other!r}")
