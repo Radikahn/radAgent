@@ -92,11 +92,12 @@ jobs:
           cache-dependency-glob: agent/uv.lock
       - run: uv sync --locked
         working-directory: agent
-      # The sandbox image with docker-compose.yml's limits, and the agent's own tools against it over SSH
+      # The sandbox image with docker-compose.yml's limits, and the agent's own tools against it over SSH. Its default
+      # of 4 CPUs is more than the runner has, and Docker refuses a container that asks for more than the host has
       - name: Start the sandbox
         run: |
           sandbox/keygen.sh > /dev/null
-          docker compose -f sandbox/docker-compose.yml up -d --build --wait
+          SANDBOX_CPUS="$(nproc)" docker compose -f sandbox/docker-compose.yml up -d --build --wait
           host_key="$(docker compose -f sandbox/docker-compose.yml exec -T sandbox cat /etc/ssh/host_keys/ssh_host_ed25519_key.pub)"
           echo "SANDBOX_HOST_KEY=${host_key}" >> "$GITHUB_ENV"
       - name: Smoke test
