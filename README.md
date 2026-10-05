@@ -128,7 +128,9 @@ write and edit Google Docs, and read and change your calendar. Setting up the Go
 
 Each chat is its own conversation with its own context and memory, kept in `agent/.agent/chats/<id>/`: the saved
 conversation (reopening a chat picks up where it left off), the facts the agent learned in it, and the cards it
-showed. A chat only remembers what was said in it. Deleting a chat deletes its memory too.
+showed. A chat only remembers what was said in it. Deleting a chat deletes its memory too. Each message also
+carries your device's time zone, and the agent gets your local date and time ahead of it
+(`agent/src/radagent/clock.py`), so "today" and "this week" are your days rather than the server's UTC ones.
 
 On AWS the chats are in the S3 bucket instead (`RADAGENT_S3_BUCKET`, set by Terraform), under `chats/`, and the
 shared memory under `memory/`; `scripts/migrate-chats.sh` copies the local ones up, since the layout in the bucket

@@ -8,6 +8,7 @@ import re
 from collections.abc import Callable
 from typing import Any
 
+from radagent.clock import is_time_note
 from radagent.coding import is_code_note
 from radagent.commands import COMMANDS
 from radagent.media import split_attachments
@@ -77,7 +78,8 @@ def to_turns(messages: list[dict[str, Any]], cards: dict[str, Any]) -> list[dict
             texts = [text for block in rest if isinstance(text := block.get("text"), str)]
             turn: dict[str, Any] = {
                 "id": message.get("tracking_id") or f"saved-{index}",
-                "prompt": "\n".join(text for text in texts if not _note_of(text)).strip(),
+                # The user's time goes ahead of every message (radagent.clock); it isn't something they wrote
+                "prompt": "\n".join(text for text in texts if not _note_of(text) and not is_time_note(text)).strip(),
                 "parts": [],
                 "status": "done",
             }

@@ -129,10 +129,15 @@ def _decode_attachments(items: Any) -> list[Attachment]:
     return attachments
 
 
-async def _run_turn(agent: RadAgent, prompt: str, command: str | None, attachments: list[Attachment], send: Send) -> None:
+async def _run_turn(
+    agent: RadAgent, prompt: str, command: str | None, attachments: list[Attachment], time_zone: str | None, send: Send
+) -> None:
     stop_reason = "error"
     try:
-        stream = agent.stream(prompt, cross_chat = command == "memory", attachments = attachments, code = command == "code")
+        stream = agent.stream(
+            prompt, cross_chat = command == "memory", attachments = attachments, code = command == "code",
+            time_zone = time_zone,
+        )
         async for event in stream:
             _forward(event, send)
             if "result" in event:
@@ -239,7 +244,9 @@ class Chats:
         client.send("history", chat = chat_id, turns = turns, running = self.busy(chat_id))
 
 
-    def prompt(self, chat_id: str, turn_id: Any, text: str, command: Any, attachments: Any, client: Client) -> None:
+    def prompt(
+        self, chat_id: str, turn_id: Any, text: str, command: Any, attachments: Any, client: Client, time_zone: Any = None
+    ) -> None:
         send = functools.partial(self.hub.send, chat = chat_id, turn = turn_id)
         slash = COMMANDS.get(command) if isinstance(command, str) else None
         if chat_id in self.deleting:
@@ -274,7 +281,10 @@ class Chats:
             if slash is not None:
                 task = self._run_command(chat_id, turn_id, slash, text, send)
             else:
-                task = self._answer(chat_id, text, command if isinstance(command, str) else None, files, send)
+                task = self._answer(
+                    chat_id, text, command if isinstance(command, str) else None, files,
+                    time_zone if isinstance(time_zone, str) else None, send,
+                )
             self.turns[chat_id] = asyncio.create_task(task)
 
 
@@ -304,7 +314,9 @@ class Chats:
         self.unload_idle(finished = chat_id)
 
 
-    async def _answer(self, chat_id: str, text: str, command: str | None, attachments: list[Attachment], send: Send) -> None:
+    async def _answer(
+        self, chat_id: str, text: str, command: str | None, attachments: list[Attachment], time_zone: str | None, send: Send
+    ) -> None:
         if (agent := await self._load(chat_id, send)) is None:
             return
 
@@ -314,7 +326,7 @@ class Chats:
                 self.store.add_card(chat_id, fields["id"], fields["card"])
             send(kind, **fields)
 
-        await _run_turn(agent, text, command, attachments, send_and_keep)
+        await _run_turn(agent, text, command, attachments, time_zone, send_and_keep)
         self._finish(chat_id)
 
 
@@ -451,7 +463,7 @@ def dispatch(chats: Chats, client: Client, command: Any) -> None:
         {"type": "list"}                                    the chats, as a `chats` event
         {"type": "open", "chat": id}                        the chat's saved turns, as a `history` event
         {"type": "prompt", "chat": id, "turn": id, "text": str, "command": "memory" | "code" | "research" |
-         "profile" | None, "attachments"?: [{"name": str, "data": base64}]}
+         "profile" | None, "attachments"?: [{"name": str, "data": base64}], "time_zone"?: str}
         {"type": "cancel", "chat": id}
         {"type": "delete", "chat": id}
         {"type": "prompts"}                                 the prompt presets, as a `prompts` event
@@ -462,7 +474,8 @@ def dispatch(chats: Chats, client: Client, command: Any) -> None:
     /memory, which lets that one message look through the other chats, and "code" is /code, which asks for code
     in copyable code blocks (radagent.coding); any command in radagent.commands, such as "research" or "profile",
     runs that command on the text instead of the agent answering it, and may be sent without text. Attachments are
-    images, PDFs, Office and text files; a prompt may carry them without text
+    images, PDFs, Office and text files; a prompt may carry them without text. "time_zone" is the device's IANA
+    zone ("America/Toronto"), which the agent dates the message in (radagent.clock); without it, the server's
 
     Events out: ready, chats, history (to the client that opened the chat), error, google, prompts ({"active": slot,
     "slots": [{"name", "text"}]}, to every client once one changes them), prompt_error (to the client whose prompt
@@ -491,7 +504,10 @@ def dispatch(chats: Chats, client: Client, command: Any) -> None:
             chats.open(chat_id, client)
         case "prompt":
             text = str(command.get("text") or "").strip()
-            chats.prompt(chat_id, command.get("turn"), text, command.get("command"), command.get("attachments") or [], client)
+            chats.prompt(
+                chat_id, command.get("turn"), text, command.get("command"), command.get("attachments") or [], client,
+                command.get("time_zone"),
+            )
         case "cancel":
             chats.cancel(chat_id)
         case "delete":
