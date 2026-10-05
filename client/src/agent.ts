@@ -311,10 +311,21 @@ export function useAgent() {
       const attachments = files.map(({ name, kind, preview }) => ({ name, kind, preview }));
       const turn: Turn = { id: crypto.randomUUID(), prompt: text, command, attachments, parts: [], status: "streaming" };
       dispatch({ kind: "submit", chat: activeId, turn });
+      // The device's time zone lets the agent date the message in the user's day rather than the server's UTC one;
+      // see agent/src/radagent/clock.py
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       // Files travel as base64 inside the command; reading them takes a moment, so the turn shows first
       Promise.all(files.map(async (file) => ({ name: file.name, data: await encode(file.file) })))
         .then((encoded) =>
-          sendCommand({ type: "prompt", chat: activeId, turn: turn.id, text, command, attachments: encoded }),
+          sendCommand({
+            type: "prompt",
+            chat: activeId,
+            turn: turn.id,
+            text,
+            command,
+            attachments: encoded,
+            time_zone: timeZone,
+          }),
         )
         .catch((error) => dispatch({ kind: "fail", chat: activeId, turn: turn.id, error: String(error) }));
     },
