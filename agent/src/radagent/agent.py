@@ -6,6 +6,7 @@ from typing import Any, cast
 from os import getenv
 
 from radagent.chats import ChatStore
+from radagent.clock import is_time_note, time_note, user_zone
 from radagent.coding import CODE_NOTE, is_code_note
 from radagent.config import MODEL, TRUSTED_DOMAINS
 from radagent.media import Attachment, MediaGuard, prompt_content
@@ -97,13 +98,15 @@ class _WithoutNotes:
 
 
 def _is_note(block: ContentBlock) -> bool:
-    return isinstance(text := block.get("text"), str) and (is_cross_chat_note(text) or is_code_note(text))
+    return isinstance(text := block.get("text"), str) and (
+        is_cross_chat_note(text) or is_code_note(text) or is_time_note(text)
+    )
 
 
 def _with_notes(prompt: str | list[ContentBlock], notes: list[str]) -> str | list[ContentBlock]:
     """
-    The prompt with notes from a slash command ahead of it, e.g. what /code asks for. Each note stays a block of its
-    own, which is how the chat history knows to hide it
+    The prompt with notes ahead of it: the user's time (radagent.clock) and what a slash command asks for, e.g. /code.
+    Each note stays a block of its own, which is how the chat history knows to hide it
     """
     if not notes:
         return prompt
@@ -237,7 +240,9 @@ class RadAgent:
         """
 
         ##TODO: Handle kwargs
-        prompt = _with_notes(prompt_content(query, list(attachments)), [CODE_NOTE] if code else [])
+        # The REPL runs on the user's own machine, so its clock's zone is theirs
+        notes = [time_note(user_zone(None)), *([CODE_NOTE] if code else [])]
+        prompt = _with_notes(prompt_content(query, list(attachments)), notes)
         self._refresh_profile()
         response: AgentResult = self.AGENT(prompt = prompt)
 
@@ -245,7 +250,8 @@ class RadAgent:
 
 
     async def stream(
-        self, query: str, cross_chat: bool = False, attachments: Sequence[Attachment] = (), code: bool = False
+        self, query: str, cross_chat: bool = False, attachments: Sequence[Attachment] = (), code: bool = False,
+        time_zone: str | None = None
     ) -> AsyncIterator[dict[str, Any]]:
         """
         Pass provided query to strands agent and stream the response as it is generated
@@ -255,6 +261,8 @@ class RadAgent:
             cross_chat: {bool} Let this message look through the user's other chats (the /memory command)
             attachments: {Sequence[Attachment]} Images, PDFs, Office and text files sent along with the query
             code: {bool} Ask for code laid out in code blocks (the /code command)
+            time_zone: {str | None} The user's IANA time zone, e.g. "America/Toronto", which the app sends with each
+                       message; this machine's when None
 
         Returns:
             events: {AsyncIterator[dict]} Strands stream events; the last one holds the `result` {AgentResult}
@@ -265,7 +273,7 @@ class RadAgent:
         # Shrinking a large photo takes a moment, so it runs off the event loop
         prompt = await asyncio.to_thread(prompt_content, query, list(attachments)) if attachments else query
         kwargs: dict[str, Any] = {}
-        notes: list[str] = []
+        notes: list[str] = [time_note(user_zone(time_zone))]
         if cross_chat:
             # The note tells the model it may look; the flag is what actually unlocks the tools, for this turn only
             notes.append(CROSS_CHAT_NOTE)
