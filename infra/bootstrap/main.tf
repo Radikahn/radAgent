@@ -30,10 +30,11 @@ locals {
 }
 
 resource "aws_s3_bucket" "tfstate" {
-  bucket = local.bucket_name
+  bucket        = local.bucket_name
+  force_destroy = true
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 

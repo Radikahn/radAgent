@@ -56,7 +56,7 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
   depends_on = [aws_iam_role_policy.runtime]
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
     ignore_changes  = [agent_runtime_artifact]
   }
 }

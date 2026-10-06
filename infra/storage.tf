@@ -1,7 +1,8 @@
 # Chats (and agent memory) live here; the runtime reads and writes them with its execution role.
 
 resource "aws_s3_bucket" "chats" {
-  bucket = "${var.project}-chats-${local.account_id}"
+  bucket        = "${var.project}-chats-${local.account_id}"
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_ownership_controls" "chats" {
