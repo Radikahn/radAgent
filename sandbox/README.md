@@ -47,14 +47,15 @@ Node. For system packages, add them to `image/Dockerfile`.
      authorizedKeys = [ "ssh-ed25519 AAAA... radagent@2026-10-03" ];
      # Optional, with their defaults:
      # cpus = "4"; memory = "8g"; tmpSize = "4g"; pids = 1024;
-     # listenAddress = "127.0.0.1"; port = 2222;
+     # listenAddress = "127.0.0.1"; port = 2222; autoStart = false;
    };
    ```
 
    The module needs the whole `sandbox/` folder next to it (it builds `image/`), so point it at a checkout of this
    repository, or copy the folder into your configuration.
 
-3. `sudo nixos-rebuild switch`. The first start builds the image, which takes a few minutes. Then check it:
+3. `sudo nixos-rebuild switch`, then start it: `sudo systemctl start docker-radagent-sandbox`. It doesn't start at
+   boot unless you set `autoStart = true`. The first start builds the image, which takes a few minutes. Then check it:
 
    ```sh
    systemctl status docker-radagent-sandbox

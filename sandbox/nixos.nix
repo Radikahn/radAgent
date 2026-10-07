@@ -11,7 +11,8 @@
 #   - radagent-sandbox-image.service  builds the image when ./image changes (tagged by its hash)
 #   - radagent-sandbox-net.service    the container's own Docker network, and firewall rules that keep the container
 #                                     away from your LAN and this host, and rate limit new SSH connections
-#   - docker-radagent-sandbox.service the container itself, via virtualisation.oci-containers
+#   - docker-radagent-sandbox.service the container itself, via virtualisation.oci-containers; it starts the other two,
+#                                     and starts at boot only with autoStart = true
 #
 # Docker publishes ports with its own iptables rules, which bypass networking.firewall: a port published on 0.0.0.0
 # is open whatever allowedTCPPorts says. So the container listens on 127.0.0.1 unless you set listenAddress
@@ -107,6 +108,15 @@ in
         Where the host publishes the container's SSH port. 127.0.0.1 is enough with a Cloudflare Tunnel, whose
         cloudflared runs on this host. Use the host's LAN or Tailscale address (or 0.0.0.0, with a router port
         forward) to connect to it directly.
+      '';
+    };
+
+    autoStart = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Start the container at boot. Off, it runs only after `systemctl start docker-radagent-sandbox`, which also
+        builds the image and sets up the network and firewall rules (they only start with the container).
       '';
     };
 
@@ -245,7 +255,8 @@ in
 
     virtualisation.oci-containers.containers.radagent-sandbox = {
       image = imageTag;
-      ports = [ "${cfg.listenAddress}:${toString cfg.port}:${toString containerPort}" ];
+      inherit (cfg) autoStart;
+      ports =[ "${cfg.listenAddress}:${toString cfg.port}:${toString containerPort}" ];
       volumes = [
         "${cfg.dataDir}/home:/home/agent"
         "${cfg.dataDir}/host-keys:/etc/ssh/host_keys"
